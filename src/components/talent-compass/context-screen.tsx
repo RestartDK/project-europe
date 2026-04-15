@@ -47,7 +47,7 @@ export function ContextScreen({
   onStartDiscovery,
 }: Props) {
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center px-5 sm:px-10 md:px-12 lg:px-16">
       <motion.div
         className="w-full max-w-xl sm:max-w-2xl"
         initial={{ opacity: 0, y: 10 }}
