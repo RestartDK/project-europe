@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
@@ -11,6 +10,10 @@ import {
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
+
+const flowPrimaryButtonClassName =
+  "h-11 w-full min-w-0 rounded-2xl px-5 text-sm font-semibold shadow-sm ring-1 ring-foreground/10 transition-[box-shadow,transform] hover:shadow-md hover:ring-foreground/15 active:translate-y-px"
 
 const sharpeningQuestions = [
   "remote-friendly?",
@@ -21,43 +24,56 @@ const sharpeningQuestions = [
 ]
 
 type Props = {
+  step: 1 | 2
+  onStepChange: (step: 1 | 2) => void
+  company: string
+  onCompanyChange: (value: string) => void
+  lookingFor: string
+  onLookingForChange: (value: string) => void
+  selectedChips: Set<string>
+  onToggleChip: (q: string) => void
   onStartDiscovery: () => void
 }
 
-export function ContextScreen({ onStartDiscovery }: Props) {
-  const [step, setStep] = useState<1 | 2>(1)
-  const [company, setCompany] = useState("")
-  const [lookingFor, setLookingFor] = useState("")
-  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set())
-
-  const toggleChip = (q: string) => {
-    setSelectedChips((prev) => {
-      const next = new Set(prev)
-      if (next.has(q)) {
-        next.delete(q)
-      } else {
-        next.add(q)
-      }
-      return next
-    })
-  }
-
+export function ContextScreen({
+  step,
+  onStepChange,
+  company,
+  onCompanyChange,
+  lookingFor,
+  onLookingForChange,
+  selectedChips,
+  onToggleChip,
+  onStartDiscovery,
+}: Props) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <motion.div
-        className="w-full max-w-md"
+        className="w-full max-w-xl sm:max-w-2xl"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
         <Card className="border-none bg-transparent py-0 shadow-none ring-0">
           <CardHeader className="px-0">
-            <CardTitle className="font-heading text-2xl font-bold">
-              find your next hire
-            </CardTitle>
-            <CardDescription>
-              scanning the open internet to find matches
-            </CardDescription>
+            {step === 2 && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="-ml-2 mb-2 h-8 w-fit justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => onStepChange(1)}
+              >
+                ← back
+              </Button>
+            )}
+            <div className="space-y-1.5">
+              <CardTitle className="font-heading text-2xl font-bold">
+                find your next hire
+              </CardTitle>
+              <CardDescription>
+                scanning the open internet to find matches
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="px-0">
         <AnimatePresence mode="wait">
@@ -78,13 +94,13 @@ export function ContextScreen({ onStartDiscovery }: Props) {
                 className="min-h-24 rounded-2xl text-sm"
                 placeholder="e.g. We're building developer tools for infrastructure teams. Series A, 30 engineers..."
                 value={company}
-                onChange={(e) => setCompany(e.target.value)}
+                onChange={(e) => onCompanyChange(e.target.value)}
               />
               <Button
                 type="button"
-                className="w-full rounded-full text-xs"
+                className={flowPrimaryButtonClassName}
                 disabled={!company.trim()}
-                onClick={() => setStep(2)}
+                onClick={() => onStepChange(2)}
               >
                 continue →
               </Button>
@@ -108,7 +124,7 @@ export function ContextScreen({ onStartDiscovery }: Props) {
                 className="min-h-20 rounded-2xl text-sm"
                 placeholder="e.g. Senior backend engineer, strong in Rust or Go, distributed systems..."
                 value={lookingFor}
-                onChange={(e) => setLookingFor(e.target.value)}
+                onChange={(e) => onLookingForChange(e.target.value)}
               />
 
               <div>
@@ -123,7 +139,7 @@ export function ContextScreen({ onStartDiscovery }: Props) {
                       size="sm"
                       variant={selectedChips.has(q) ? "default" : "secondary"}
                       className="h-8 rounded-full px-3 text-[11px] font-medium"
-                      onClick={() => toggleChip(q)}
+                      onClick={() => onToggleChip(q)}
                     >
                       {q}
                     </Button>
@@ -133,7 +149,7 @@ export function ContextScreen({ onStartDiscovery }: Props) {
 
               <Button
                 type="button"
-                className="mt-1 w-full rounded-full text-xs"
+                className={cn("mt-1", flowPrimaryButtonClassName)}
                 disabled={!lookingFor.trim()}
                 onClick={onStartDiscovery}
               >

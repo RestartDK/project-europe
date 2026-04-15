@@ -1,17 +1,13 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
+import { ChevronDown } from "lucide-react"
 
 import { type Candidate, candidates } from "@/data/candidates"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import {
   Table,
   TableBody,
@@ -24,6 +20,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
 type Props = {
+  onEditCriteria: () => void
   onSelectCandidate: (c: Candidate) => void
 }
 
@@ -41,6 +38,16 @@ const headCn =
 
 const headCnCenter =
   "h-auto px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground"
+
+/** Sticky first column only when the table scrolls horizontally. */
+const stickyCandidateHead = cn(
+  headCn,
+  "sticky left-0 z-30 border-r border-border bg-secondary/40"
+)
+const stickyCandidateCell = cn(
+  "px-4 py-2.5",
+  "sticky left-0 z-10 border-r border-border bg-card group-hover:bg-secondary/40"
+)
 
 function SignalCell({ value }: { value: number }) {
   const indicatorClass =
@@ -84,7 +91,7 @@ function MatchBar({ score }: { score: number }) {
 
 const MotionTableRow = motion.create(TableRow)
 
-export function ResultsScreen({ onSelectCandidate }: Props) {
+export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
   const [activeFilter, setActiveFilter] = useState("all")
   const [weights, setWeights] = useState({
     github: true,
@@ -92,87 +99,183 @@ export function ResultsScreen({ onSelectCandidate }: Props) {
     network: true,
     oss: true,
   })
+  const [mobileStackOpen, setMobileStackOpen] = useState(false)
+  const [mobileWeightsOpen, setMobileWeightsOpen] = useState(false)
+  const mobileStackRef = useRef<HTMLDetailsElement>(null)
+  const mobileWeightsRef = useRef<HTMLDetailsElement>(null)
+
+  useEffect(() => {
+    if (!mobileStackOpen && !mobileWeightsOpen) return
+
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target
+      if (!(target instanceof Node)) return
+      if (mobileStackOpen && !mobileStackRef.current?.contains(target)) {
+        setMobileStackOpen(false)
+      }
+      if (mobileWeightsOpen && !mobileWeightsRef.current?.contains(target)) {
+        setMobileWeightsOpen(false)
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown, true)
+    return () => document.removeEventListener("pointerdown", onPointerDown, true)
+  }, [mobileStackOpen, mobileWeightsOpen])
 
   const activeWeightValues = weightKeys.filter((k) => weights[k])
+  const weightSummaryLabel =
+    activeWeightValues.length === weightKeys.length
+      ? "all on"
+      : `${activeWeightValues.length}/${weightKeys.length} on`
+
+  const roleToggleGroup = (
+    <ToggleGroup
+      type="single"
+      value={activeFilter}
+      onValueChange={(v) => v && setActiveFilter(v)}
+      variant="outline"
+      size="sm"
+      spacing={4}
+      className="flex min-w-0 w-full max-w-full flex-wrap justify-start gap-1.5"
+    >
+      {filters.map((f) => (
+        <ToggleGroupItem
+          key={f}
+          value={f}
+          className="rounded-full px-3 text-[11px] font-medium data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background"
+        >
+          {f}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  )
+
+  const weightsToggleGroup = (layout: "panel" | "toolbar") => (
+    <ToggleGroup
+      type="multiple"
+      value={activeWeightValues}
+      onValueChange={(vals) => {
+        setWeights({
+          github: vals.includes("github"),
+          blog: vals.includes("blog"),
+          network: vals.includes("network"),
+          oss: vals.includes("oss"),
+        })
+      }}
+      variant="outline"
+      size="sm"
+      spacing={4}
+      className={cn(
+        "flex justify-start gap-1.5",
+        layout === "panel" &&
+          "w-full min-w-0 max-w-full flex-wrap",
+        layout === "toolbar" && "w-fit shrink-0 flex-nowrap"
+      )}
+    >
+      {weightKeys.map((key) => (
+        <ToggleGroupItem
+          key={key}
+          value={key}
+          className="rounded-full px-2.5 text-[10px] font-medium capitalize data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground"
+        >
+          {key}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
+  )
 
   return (
-    <div className="mx-auto min-h-screen max-w-6xl px-6 py-8">
+    <div className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Card className="mb-5 border-none bg-transparent py-0 shadow-none ring-0">
-          <CardHeader className="px-0">
-            <CardTitle className="font-heading text-xl font-bold">
-              discovery results
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {candidates.length} candidates
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        <div className="mb-4 flex flex-wrap items-center gap-1.5">
-          <ToggleGroup
-            type="single"
-            value={activeFilter}
-            onValueChange={(v) => v && setActiveFilter(v)}
-            variant="outline"
-            size="sm"
-            spacing={4}
-            className="flex min-w-0 flex-wrap justify-start gap-1.5"
+        <header className="mb-5 text-left">
+          <Button
+            type="button"
+            variant="ghost"
+            className="-ml-2 mb-2 h-8 justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={onEditCriteria}
           >
-            {filters.map((f) => (
-              <ToggleGroupItem
-                key={f}
-                value={f}
-                className="rounded-full px-3 text-[11px] font-medium data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background"
-              >
-                {f}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+            ← edit criteria
+          </Button>
+          <h2 className="font-heading text-xl font-bold text-foreground">
+            discovery results
+          </h2>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            {candidates.length} candidates
+          </p>
+        </header>
 
-          <Separator
-            orientation="vertical"
-            className="mx-1 hidden h-6 sm:block"
+        <div className="mb-4 grid grid-cols-2 items-start gap-2 overflow-visible md:hidden">
+          <details
+            ref={mobileStackRef}
+            open={mobileStackOpen}
+            onToggle={(e) => setMobileStackOpen(e.currentTarget.open)}
+            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border/60 open:z-20"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                stack
+              </span>
+              <span className="min-w-0 flex-1 truncate text-right text-[11px] font-medium capitalize text-foreground">
+                {activeFilter}
+              </span>
+              <ChevronDown
+                aria-hidden
+                className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+              />
+            </summary>
+            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border/60">
+              {roleToggleGroup}
+            </div>
+          </details>
+
+          <details
+            ref={mobileWeightsRef}
+            open={mobileWeightsOpen}
+            onToggle={(e) => setMobileWeightsOpen(e.currentTarget.open)}
+            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border/60 open:z-20"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                weights
+              </span>
+              <span className="min-w-0 flex-1 truncate text-right text-[11px] font-medium text-foreground">
+                {weightSummaryLabel}
+              </span>
+              <ChevronDown
+                aria-hidden
+                className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+              />
+            </summary>
+            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border/60">
+              {weightsToggleGroup("panel")}
+            </div>
+          </details>
+        </div>
+
+        <div className="mb-4 hidden w-full min-w-0 items-center gap-3 md:flex md:flex-nowrap">
+          <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {roleToggleGroup}
+          </div>
+
+          <div
+            role="presentation"
+            className="h-7 w-px shrink-0 bg-border"
+            aria-hidden
           />
 
-          <div className="flex w-full flex-wrap items-center gap-1.5 sm:ml-auto sm:w-auto">
-            <Label className="mr-1 text-[10px] text-muted-foreground">
+          <div className="flex shrink-0 flex-nowrap items-center gap-2">
+            <Label className="shrink-0 text-[10px] text-muted-foreground">
               weights
             </Label>
-            <ToggleGroup
-              type="multiple"
-              value={activeWeightValues}
-              onValueChange={(vals) => {
-                setWeights({
-                  github: vals.includes("github"),
-                  blog: vals.includes("blog"),
-                  network: vals.includes("network"),
-                  oss: vals.includes("oss"),
-                })
-              }}
-              variant="outline"
-              size="sm"
-              spacing={4}
-              className="flex flex-wrap justify-start gap-1.5"
-            >
-              {weightKeys.map((key) => (
-                <ToggleGroupItem
-                  key={key}
-                  value={key}
-                  className="rounded-full px-2.5 text-[10px] font-medium capitalize data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground"
-                >
-                  {key}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+            {weightsToggleGroup("toolbar")}
           </div>
         </div>
 
         <Card className="overflow-hidden rounded-2xl py-0 ring-1 ring-border">
-          <Table>
+          <Table className="min-w-max">
             <TableHeader>
               <TableRow className="border-b border-border bg-secondary/40 hover:bg-secondary/40">
-                <TableHead className={headCn}>candidate</TableHead>
+                <TableHead className={stickyCandidateHead}>candidate</TableHead>
                 <TableHead className={headCn}>role</TableHead>
                 <TableHead className={headCn}>company</TableHead>
                 <TableHead className={headCn}>match</TableHead>
@@ -192,7 +295,7 @@ export function ResultsScreen({ onSelectCandidate }: Props) {
                   onClick={() => onSelectCandidate(c)}
                   className={cn(rowCn, "group")}
                 >
-                  <TableCell className="px-4 py-2.5">
+                  <TableCell className={stickyCandidateCell}>
                     <div className="flex items-center gap-2.5">
                       <Avatar className="size-6 rounded-full">
                         <AvatarImage src={c.avatar} alt={c.name} />

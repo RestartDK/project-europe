@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -15,10 +16,11 @@ const steps = [
 ]
 
 type Props = {
+  onBack: () => void
   onComplete: () => void
 }
 
-export function DiscoveryScreen({ onComplete }: Props) {
+export function DiscoveryScreen({ onBack, onComplete }: Props) {
   const [currentStep, setCurrentStep] = useState(0)
   const [progress, setProgress] = useState(0)
 
@@ -46,7 +48,19 @@ export function DiscoveryScreen({ onComplete }: Props) {
   }, [onComplete])
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4">
+    <div className="flex min-h-screen flex-col px-4 pt-6 pb-8 sm:px-6 sm:pt-8">
+      <header className="mx-auto mb-6 w-full max-w-6xl text-left">
+        <Button
+          type="button"
+          variant="ghost"
+          className="-ml-2 h-8 justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+          onClick={onBack}
+        >
+          ← edit criteria
+        </Button>
+      </header>
+
+      <div className="flex flex-1 flex-col items-center justify-center">
       <Card className="w-full max-w-sm border-none bg-transparent py-0 shadow-none ring-0">
         <CardContent className="px-0">
           <motion.div
@@ -85,6 +99,7 @@ export function DiscoveryScreen({ onComplete }: Props) {
           </motion.div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
