@@ -4,7 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "concurrently --names convex,vite --prefix-colors cyan,green \"bunx convex dev\" \"vite\"",
+    "dev": "vite",
+    "dev:backend": "bunx convex dev",
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
