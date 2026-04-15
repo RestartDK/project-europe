@@ -64,7 +64,7 @@ describe("POST /clay-webhook", () => {
       query: "test",
       apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
     })
-    const candidateId = await t.mutation(internal.candidates.createCandidate, {
+    await t.mutation(internal.candidates.createCandidate, {
       searchId,
       name: "Temp",
     })

@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test"
-import { expect, test, vi, describe } from "vitest"
+import { describe, expect, test } from "vitest"
 import { api, internal } from "./_generated/api"
 import schema from "./schema"
 

@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "components-guide": {
+      "source": "get-convex/convex-agent-plugins",
+      "sourceType": "github",
+      "computedHash": "45dd1171ea2db23f73d571abf79a3560f57a86472f2078791e11c73db79c494f"
+    },
     "convex-create-component": {
       "source": "get-convex/agent-skills",
       "sourceType": "github",

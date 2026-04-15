@@ -1,6 +1,5 @@
 import { v } from "convex/values"
 import { internalMutation, query } from "./_generated/server"
-import { Id } from "./_generated/dataModel"
 
 export const createCandidate = internalMutation({
   args: {
@@ -13,7 +12,7 @@ export const createCandidate = internalMutation({
     apolloId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("candidates", {
+    return await ctx.db.insert("talentCandidates", {
       searchId: args.searchId,
       name: args.name,
       currentTitle: args.currentTitle,
@@ -28,7 +27,7 @@ export const createCandidate = internalMutation({
 
 export const updateFromClay = internalMutation({
   args: {
-    candidateId: v.id("candidates"),
+    candidateId: v.id("talentCandidates"),
     skills: v.optional(v.array(v.string())),
     accomplishmentSummary: v.optional(v.string()),
     movabilityScore: v.optional(v.number()),
@@ -58,7 +57,7 @@ export const getCandidatesForSearch = query({
   args: { searchId: v.id("searches") },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("candidates")
+      .query("talentCandidates")
       .withIndex("by_searchId", (q) => q.eq("searchId", args.searchId))
       .take(50)
   },

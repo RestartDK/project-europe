@@ -1,7 +1,7 @@
 import type { Doc } from "../../convex/_generated/dataModel"
 
 interface CandidateCardProps {
-  candidate: Doc<"candidates">
+  candidate: Doc<"talentCandidates">
 }
 
 function MovabilityBadge({ score }: { score: number }) {

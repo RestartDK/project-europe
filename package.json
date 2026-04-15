@@ -6,20 +6,24 @@
   "scripts": {
     "dev": "concurrently --names convex,vite --prefix-colors cyan,green \"bunx convex dev\" \"vite\"",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "test": "bunx vitest run convex/"
   },
   "dependencies": {
-    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@ai-sdk/anthropic": "^3.0.69",
+    "@convex-dev/agent": "^0.6.1",
+    "@fontsource-variable/geist": "^5.2.8",
     "@fontsource-variable/inter": "^5.2.8",
-    "framer-motion": "^12.23.12",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
     "@tailwindcss/vite": "^4.2.1",
+    "ai": "^6.0.162",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.35.1",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
@@ -48,5 +52,6 @@
     "typescript-eslint": "^8.57.1",
     "vite": "^7.3.1",
     "vitest": "^4.1.4"
-  }
+  },
+  "packageManager": "bun@1.3.11"
 }

@@ -1,7 +1,8 @@
+/// <reference types="node" />
 import { v } from "convex/values"
 import { action } from "./_generated/server"
 import { internal } from "./_generated/api"
-import { Id } from "./_generated/dataModel"
+import type { Id } from "./_generated/dataModel"
 
 interface ApolloParams {
   titles: string[]
@@ -144,7 +145,7 @@ export const search = action({
 
       // 4. Store each candidate + push to Clay
       for (const person of people) {
-        const candidateId: Id<"candidates"> = await ctx.runMutation(
+        const candidateId: Id<"talentCandidates"> = await ctx.runMutation(
           internal.candidates.createCandidate,
           {
             searchId,

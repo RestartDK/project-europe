@@ -33,6 +33,7 @@ type Props = {
   selectedChips: Set<string>
   onToggleChip: (q: string) => void
   onStartDiscovery: () => void
+  errorMessage?: string | null
 }
 
 export function ContextScreen({
@@ -45,11 +46,12 @@ export function ContextScreen({
   selectedChips,
   onToggleChip,
   onStartDiscovery,
+  errorMessage,
 }: Props) {
   return (
     <div className="flex min-h-screen items-center justify-center px-5 sm:px-10 md:px-12 lg:px-16">
       <motion.div
-        className="w-full max-w-md sm:max-w-lg"
+        className="w-full max-w-xl sm:max-w-2xl"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
@@ -76,6 +78,11 @@ export function ContextScreen({
             </div>
           </CardHeader>
           <CardContent className="px-0">
+            {errorMessage && (
+              <div className="mb-4 rounded-2xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-xs text-destructive">
+                {errorMessage}
+              </div>
+            )}
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div

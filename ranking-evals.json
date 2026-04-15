@@ -1,0 +1,14 @@
+[
+  {
+    "name": "realtime-devtools-search",
+    "prompt": "Staff or senior engineer with React, TypeScript, developer tools, and realtime collaboration experience. Open source and product taste are both important.",
+    "expectedTopSlugs": ["maya-chen", "leo-santos", "alina-patel"],
+    "notes": "Maya should usually win because she combines React, realtime, and developer tools with clear evidence."
+  },
+  {
+    "name": "infra-heavy-search",
+    "prompt": "Principal or staff engineer with distributed systems, infrastructure, and backend architecture depth. Open source systems work matters more than UI polish.",
+    "expectedTopSlugs": ["julian-ortega", "nora-kim", "leo-santos"],
+    "notes": "Julian should usually rank first because the evidence most strongly matches distributed systems depth."
+  }
+]
