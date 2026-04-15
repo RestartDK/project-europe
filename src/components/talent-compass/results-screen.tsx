@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -6,7 +6,6 @@ import type { FunctionReturnType } from "convex/server";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -25,12 +24,9 @@ type SearchResults = FunctionReturnType<typeof api.ranking.getSearchResults>;
 type ResultRow = NonNullable<SearchResults>["results"][number];
 
 type Props = {
-  onEditCriteria: () => void;
   onSelectScore: (scoreId: Id<"candidateScores">) => void;
   results: ResultRow[];
 };
-
-const filters = ["all", "backend", "frontend", "infra", "ml", "security"];
 
 const weightKeys = ["github", "blog", "network", "oss"] as const;
 
@@ -98,36 +94,22 @@ function MatchBar({ score }: { score: number }) {
 
 const MotionTableRow = motion.create(TableRow);
 
-function matchesStackFilter(r: ResultRow, filter: string) {
-  if (filter === "all") {
-    return true;
-  }
-  const hay = `${r.headline} ${r.stacks.join(" ")}`.toLowerCase();
-  return hay.includes(filter);
-}
-
-export function ResultsScreen({ onEditCriteria, onSelectScore, results }: Props) {
-  const [activeFilter, setActiveFilter] = useState("all");
+export function ResultsScreen({ onSelectScore, results }: Props) {
   const [weights, setWeights] = useState({
     github: true,
     blog: true,
     network: true,
     oss: true,
   });
-  const [mobileStackOpen, setMobileStackOpen] = useState(false);
   const [mobileWeightsOpen, setMobileWeightsOpen] = useState(false);
-  const mobileStackRef = useRef<HTMLDetailsElement>(null);
   const mobileWeightsRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
-    if (!mobileStackOpen && !mobileWeightsOpen) return;
+    if (!mobileWeightsOpen) return;
 
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target;
       if (!(target instanceof Node)) return;
-      if (mobileStackOpen && !mobileStackRef.current?.contains(target)) {
-        setMobileStackOpen(false);
-      }
       if (mobileWeightsOpen && !mobileWeightsRef.current?.contains(target)) {
         setMobileWeightsOpen(false);
       }
@@ -135,40 +117,13 @@ export function ResultsScreen({ onEditCriteria, onSelectScore, results }: Props)
 
     document.addEventListener("pointerdown", onPointerDown, true);
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [mobileStackOpen, mobileWeightsOpen]);
+  }, [mobileWeightsOpen]);
 
   const activeWeightValues = weightKeys.filter((k) => weights[k]);
   const weightSummaryLabel =
     activeWeightValues.length === weightKeys.length
       ? "all on"
       : `${activeWeightValues.length}/${weightKeys.length} on`;
-
-  const visibleRows = useMemo(
-    () => results.filter((r) => matchesStackFilter(r, activeFilter)),
-    [results, activeFilter],
-  );
-
-  const roleToggleGroup = (
-    <ToggleGroup
-      type="single"
-      value={activeFilter}
-      onValueChange={(v) => v && setActiveFilter(v)}
-      variant="outline"
-      size="sm"
-      spacing={4}
-      className="flex min-w-0 w-full max-w-full flex-wrap justify-start gap-1.5"
-    >
-      {filters.map((f) => (
-        <ToggleGroupItem
-          key={f}
-          value={f}
-          className="rounded-full px-3 text-[11px] font-medium data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background"
-        >
-          {f}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  );
 
   const weightsToggleGroup = (layout: "panel" | "toolbar") => (
     <ToggleGroup
@@ -204,48 +159,16 @@ export function ResultsScreen({ onEditCriteria, onSelectScore, results }: Props)
   );
 
   return (
-    <div className="mx-auto min-h-screen max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+    <div className="mx-auto min-h-screen max-w-6xl px-4 pb-6 pt-16 sm:px-6 sm:pb-8 sm:pt-20">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <header className="mb-5 text-left">
-          <Button
-            type="button"
-            variant="ghost"
-            className="-ml-2 mb-2 h-8 justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
-            onClick={onEditCriteria}
-          >
-            ← edit criteria
-          </Button>
           <h2 className="font-heading text-xl font-bold text-foreground">discovery results</h2>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            {visibleRows.length} candidates
-            {activeFilter !== "all" ? ` · filter: ${activeFilter}` : ""}
+            {results.length} candidates
           </p>
         </header>
 
-        <div className="mb-4 grid grid-cols-2 items-start gap-2 overflow-visible md:hidden">
-          <details
-            ref={mobileStackRef}
-            open={mobileStackOpen}
-            onToggle={(e) => setMobileStackOpen(e.currentTarget.open)}
-            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border/60 open:z-20"
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                stack
-              </span>
-              <span className="min-w-0 flex-1 truncate text-right text-[11px] font-medium capitalize text-foreground">
-                {activeFilter}
-              </span>
-              <ChevronDown
-                aria-hidden
-                className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
-              />
-            </summary>
-            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border/60">
-              {roleToggleGroup}
-            </div>
-          </details>
-
+        <div className="mb-4 overflow-visible md:hidden">
           <details
             ref={mobileWeightsRef}
             open={mobileWeightsOpen}
@@ -270,17 +193,9 @@ export function ResultsScreen({ onEditCriteria, onSelectScore, results }: Props)
           </details>
         </div>
 
-        <div className="mb-4 hidden w-full min-w-0 items-center gap-3 md:flex md:flex-nowrap">
-          <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {roleToggleGroup}
-          </div>
-
-          <div role="presentation" className="h-7 w-px shrink-0 bg-border" aria-hidden />
-
-          <div className="flex shrink-0 flex-nowrap items-center gap-2">
-            <Label className="shrink-0 text-[10px] text-muted-foreground">weights</Label>
-            {weightsToggleGroup("toolbar")}
-          </div>
+        <div className="mb-4 hidden w-full min-w-0 items-center gap-2 md:flex md:flex-nowrap">
+          <Label className="shrink-0 text-[10px] text-muted-foreground">weights</Label>
+          {weightsToggleGroup("toolbar")}
         </div>
 
         <Card className="overflow-hidden rounded-2xl py-0 ring-1 ring-border">
@@ -298,7 +213,7 @@ export function ResultsScreen({ onEditCriteria, onSelectScore, results }: Props)
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleRows.map((r, i) => (
+              {results.map((r, i) => (
                 <MotionTableRow
                   key={r.scoreId}
                   initial={{ opacity: 0 }}

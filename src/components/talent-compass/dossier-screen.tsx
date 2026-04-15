@@ -21,7 +21,6 @@ type Dossier = FunctionReturnType<typeof api.ranking.getCandidateDossier>;
 
 type Props = {
   dossier: Dossier | null | undefined;
-  onBack: () => void;
   onFeedback: (disposition: "thumbs_up" | "thumbs_down" | "promote" | "hide") => void;
 };
 
@@ -40,19 +39,10 @@ function BreakdownBar({ label, score }: { label: string; score: number }) {
   );
 }
 
-export function DossierScreen({ dossier, onBack, onFeedback }: Props) {
+export function DossierScreen({ dossier, onFeedback }: Props) {
   if (dossier === undefined) {
     return (
       <div className="mx-auto min-h-screen max-w-5xl px-6 py-8">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mb-6 h-auto px-0 text-[11px] text-muted-foreground hover:text-foreground"
-          onClick={onBack}
-        >
-          ← back
-        </Button>
         <div className="rounded-2xl border border-border bg-card p-6 text-xs text-muted-foreground">
           loading dossier…
         </div>
@@ -63,15 +53,6 @@ export function DossierScreen({ dossier, onBack, onFeedback }: Props) {
   if (dossier === null) {
     return (
       <div className="mx-auto min-h-screen max-w-5xl px-6 py-8">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mb-6 h-auto px-0 text-[11px] text-muted-foreground hover:text-foreground"
-          onClick={onBack}
-        >
-          ← back
-        </Button>
         <div className="rounded-2xl border border-border bg-card p-6 text-xs text-muted-foreground">
           dossier not available.
         </div>
@@ -92,16 +73,6 @@ export function DossierScreen({ dossier, onBack, onFeedback }: Props) {
   return (
     <div className="mx-auto min-h-screen max-w-5xl px-6 py-8">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="mb-6 h-auto px-0 text-[11px] text-muted-foreground hover:text-foreground"
-          onClick={onBack}
-        >
-          ← back
-        </Button>
-
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <Card className="rounded-2xl py-5">
             <CardContent className="space-y-4 px-5">

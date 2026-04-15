@@ -58,16 +58,6 @@ export function ContextScreen({
       >
         <Card className="border-none bg-transparent py-0 shadow-none ring-0">
           <CardHeader className="px-0">
-            {step === 2 && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="-ml-2 mb-2 h-8 w-fit justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => onStepChange(1)}
-              >
-                ← back
-              </Button>
-            )}
             <div className="space-y-1.5">
               <CardTitle className="font-heading text-2xl font-bold">
                 find your next hire

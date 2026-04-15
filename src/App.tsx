@@ -6,6 +6,7 @@ import { DiscoveryScreen } from "@/components/talent-compass/discovery-screen"
 import { DossierScreen } from "@/components/talent-compass/dossier-screen"
 import { ResultsScreen } from "@/components/talent-compass/results-screen"
 import { TalentThemeToggle } from "@/components/talent-compass/theme-toggle"
+import { Button } from "@/components/ui/button"
 import { api } from "../convex/_generated/api"
 import type { Id } from "../convex/_generated/dataModel"
 
@@ -119,9 +120,46 @@ export function App() {
     [activeRequestId, dossier, submitFeedback],
   )
 
+  const backFromDiscoveryWithError = useCallback(() => {
+    setSubmitError(searchResults?.errorMessage ?? submitError)
+    backFromDiscovery()
+  }, [backFromDiscovery, searchResults?.errorMessage, submitError])
+
+  const headerBack = useMemo(() => {
+    if (effectiveScreen === "context" && effectiveContextStep === 2) {
+      return { label: "← back", onClick: () => setContextStep(1) } as const
+    }
+    if (effectiveScreen === "discovery") {
+      return { label: "← edit criteria", onClick: backFromDiscoveryWithError } as const
+    }
+    if (effectiveScreen === "results") {
+      return { label: "← edit criteria", onClick: backToCriteriaFromResults } as const
+    }
+    if (effectiveScreen === "dossier") {
+      return { label: "← back", onClick: () => setScreen("results") } as const
+    }
+    return null
+  }, [
+    backFromDiscoveryWithError,
+    backToCriteriaFromResults,
+    effectiveContextStep,
+    effectiveScreen,
+  ])
+
   return (
     <div className="min-h-svh bg-background">
+      {headerBack && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="fixed left-4 top-4 z-40 h-8 justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground sm:left-6 sm:top-6"
+          onClick={headerBack.onClick}
+        >
+          {headerBack.label}
+        </Button>
+      )}
       <TalentThemeToggle />
+
       {effectiveScreen === "context" && (
         <ContextScreen
           step={effectiveContextStep}
@@ -138,10 +176,6 @@ export function App() {
       )}
       {effectiveScreen === "discovery" && (
         <DiscoveryScreen
-          onBack={() => {
-            setSubmitError(searchResults?.errorMessage ?? submitError)
-            backFromDiscovery()
-          }}
           status={discoveryStatus}
           errorMessage={discoveryErrorMessage}
           rankingNotes={searchResults?.rankingNotes}
@@ -149,7 +183,6 @@ export function App() {
       )}
       {effectiveScreen === "results" && (
         <ResultsScreen
-          onEditCriteria={backToCriteriaFromResults}
           results={searchResults?.results ?? []}
           onSelectScore={(scoreId) => {
             setSelectedScoreId(scoreId)
@@ -158,11 +191,7 @@ export function App() {
         />
       )}
       {effectiveScreen === "dossier" && (
-        <DossierScreen
-          dossier={dossier}
-          onBack={() => setScreen("results")}
-          onFeedback={onFeedback}
-        />
+        <DossierScreen dossier={dossier} onFeedback={onFeedback} />
       )}
     </div>
   )

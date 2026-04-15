@@ -1,7 +1,6 @@
 import { useMemo } from "react"
 import { motion } from "framer-motion"
 
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -15,7 +14,6 @@ type RankingStatus =
   | "error"
 
 type Props = {
-  onBack: () => void
   status: RankingStatus
   errorMessage?: string
   rankingNotes?: string
@@ -55,28 +53,12 @@ function statusProgress(status: RankingStatus) {
   }
 }
 
-export function DiscoveryScreen({
-  onBack,
-  status,
-  errorMessage,
-  rankingNotes,
-}: Props) {
+export function DiscoveryScreen({ status, errorMessage, rankingNotes }: Props) {
   const message = useMemo(() => statusCopy(status), [status])
   const target = useMemo(() => statusProgress(status), [status])
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pt-6 pb-8 sm:px-6 sm:pt-8">
-      <header className="mx-auto mb-6 w-full max-w-6xl text-left">
-        <Button
-          type="button"
-          variant="ghost"
-          className="-ml-2 h-8 justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
-          onClick={onBack}
-        >
-          ← edit criteria
-        </Button>
-      </header>
-
+    <div className="flex min-h-svh flex-col px-4 pb-8 sm:px-6">
       <div className="flex flex-1 flex-col items-center justify-center">
         <Card className="w-full max-w-sm border-none bg-transparent py-0 shadow-none ring-0">
           <CardContent className="px-0">
