@@ -1,11 +1,13 @@
-import { useCallback, useState } from "react"
+import { useAction, useMutation, useQuery } from "convex/react"
+import { useCallback, useMemo, useState } from "react"
 
 import { ContextScreen } from "@/components/talent-compass/context-screen"
 import { DiscoveryScreen } from "@/components/talent-compass/discovery-screen"
 import { DossierScreen } from "@/components/talent-compass/dossier-screen"
 import { ResultsScreen } from "@/components/talent-compass/results-screen"
 import { TalentThemeToggle } from "@/components/talent-compass/theme-toggle"
-import type { Candidate } from "@/data/candidates"
+import { api } from "../convex/_generated/api"
+import type { Id } from "../convex/_generated/dataModel"
 
 type Screen = "context" | "discovery" | "results" | "dossier"
 
@@ -15,11 +17,49 @@ export function App() {
   const [company, setCompany] = useState("")
   const [lookingFor, setLookingFor] = useState("")
   const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set())
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null
+  const [activeRequestId, setActiveRequestId] = useState<Id<"searchRequests"> | null>(null)
+  const [selectedScoreId, setSelectedScoreId] = useState<Id<"candidateScores"> | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const extractSearchCriteria = useAction(api.intake.extractSearchCriteria)
+  const submitFeedback = useMutation(api.ranking.submitFeedback)
+
+  const searchResults = useQuery(
+    api.ranking.getSearchResults,
+    activeRequestId ? { requestId: activeRequestId } : "skip",
   )
 
-  const handleDiscoveryComplete = useCallback(() => setScreen("results"), [])
+  const dossier = useQuery(
+    api.ranking.getCandidateDossier,
+    selectedScoreId ? { scoreId: selectedScoreId } : "skip",
+  )
+
+  const discoveryStatus = searchResults?.status ?? "ready_for_clay"
+  const discoveryErrorMessage = searchResults?.errorMessage
+
+  const effectiveScreen: Screen = (() => {
+    if (screen === "discovery") {
+      if (discoveryStatus === "ranked") return "results"
+      if (discoveryStatus === "error") return "context"
+    }
+    return screen
+  })()
+
+  const effectiveContextStep: 1 | 2 =
+    screen === "discovery" && discoveryStatus === "error" ? 2 : contextStep
+
+  const effectiveContextError =
+    submitError ??
+    (screen === "discovery" && discoveryStatus === "error"
+      ? discoveryErrorMessage ?? "Ranking failed"
+      : null)
+
+  const composedPrompt = useMemo(() => {
+    const chips = Array.from(selectedChips)
+    const chipsSuffix =
+      chips.length > 0 ? `\n\nConstraints:\n- ${chips.join("\n- ")}` : ""
+    return `${lookingFor.trim()}${chipsSuffix}`.trim()
+  }, [lookingFor, selectedChips])
 
   const toggleChip = useCallback((q: string) => {
     setSelectedChips((prev) => {
@@ -33,7 +73,30 @@ export function App() {
     })
   }, [])
 
-  const goToDiscovery = useCallback(() => setScreen("discovery"), [])
+  const goToDiscovery = useCallback(async () => {
+    setSubmitError(null)
+    setSelectedScoreId(null)
+
+    const prompt = composedPrompt
+    if (!prompt) {
+      return
+    }
+
+    setScreen("discovery")
+
+    try {
+      const result = await extractSearchCriteria({
+        prompt,
+        companyContext: company.trim() || undefined,
+      })
+      setActiveRequestId(result.requestId)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : String(err))
+      setScreen("context")
+      setContextStep(2)
+    }
+  }, [company, composedPrompt, extractSearchCriteria])
+
   const backFromDiscovery = useCallback(() => {
     setScreen("context")
     setContextStep(2)
@@ -44,12 +107,24 @@ export function App() {
     setContextStep(2)
   }, [])
 
+  const onFeedback = useCallback(
+    async (disposition: "thumbs_up" | "thumbs_down" | "promote" | "hide") => {
+      if (!activeRequestId || !dossier) return
+      await submitFeedback({
+        requestId: activeRequestId,
+        scoreId: dossier.scoreId,
+        disposition,
+      })
+    },
+    [activeRequestId, dossier, submitFeedback],
+  )
+
   return (
     <div className="min-h-svh bg-background">
       <TalentThemeToggle />
-      {screen === "context" && (
+      {effectiveScreen === "context" && (
         <ContextScreen
-          step={contextStep}
+          step={effectiveContextStep}
           onStepChange={setContextStep}
           company={company}
           onCompanyChange={setCompany}
@@ -58,27 +133,35 @@ export function App() {
           selectedChips={selectedChips}
           onToggleChip={toggleChip}
           onStartDiscovery={goToDiscovery}
+          errorMessage={effectiveContextError}
         />
       )}
-      {screen === "discovery" && (
+      {effectiveScreen === "discovery" && (
         <DiscoveryScreen
-          onBack={backFromDiscovery}
-          onComplete={handleDiscoveryComplete}
+          onBack={() => {
+            setSubmitError(searchResults?.errorMessage ?? submitError)
+            backFromDiscovery()
+          }}
+          status={discoveryStatus}
+          errorMessage={discoveryErrorMessage}
+          rankingNotes={searchResults?.rankingNotes}
         />
       )}
-      {screen === "results" && (
+      {effectiveScreen === "results" && (
         <ResultsScreen
           onEditCriteria={backToCriteriaFromResults}
-          onSelectCandidate={(c) => {
-            setSelectedCandidate(c)
+          results={searchResults?.results ?? []}
+          onSelectScore={(scoreId) => {
+            setSelectedScoreId(scoreId)
             setScreen("dossier")
           }}
         />
       )}
-      {screen === "dossier" && selectedCandidate && (
+      {effectiveScreen === "dossier" && (
         <DossierScreen
-          candidate={selectedCandidate}
+          dossier={dossier}
           onBack={() => setScreen("results")}
+          onFeedback={onFeedback}
         />
       )}
     </div>

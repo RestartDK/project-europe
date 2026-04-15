@@ -6,28 +6,22 @@ import "./index.css"
 import App from "./App.tsx"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined
+const convexUrl = import.meta.env.VITE_CONVEX_URL
 
-const convexClient = convexUrl ? new ConvexReactClient(convexUrl) : null
-
-if (!convexUrl && import.meta.env.DEV) {
-  console.warn(
-    "[project-europe] VITE_CONVEX_URL is not set. UI runs without Convex. Run `bunx convex dev` and set VITE_CONVEX_URL to connect the backend."
+if (!convexUrl) {
+  throw new Error(
+    "Missing VITE_CONVEX_URL. Run `bunx convex dev` to configure Convex."
   )
 }
 
+const convexClient = new ConvexReactClient(convexUrl)
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {convexClient ? (
-      <ConvexProvider client={convexClient}>
-        <ThemeProvider>
-          <App />
-        </ThemeProvider>
-      </ConvexProvider>
-    ) : (
+    <ConvexProvider client={convexClient}>
       <ThemeProvider>
         <App />
       </ThemeProvider>
-    )}
+    </ConvexProvider>
   </StrictMode>
 )
