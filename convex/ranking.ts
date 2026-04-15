@@ -1,0 +1,271 @@
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+
+const requestStatusValidator = v.union(
+  v.literal("ready_for_clay"),
+  v.literal("clay_queued"),
+  v.literal("importing_candidates"),
+  v.literal("ranking"),
+  v.literal("ranked"),
+  v.literal("error"),
+);
+
+const feedbackDispositionValidator = v.union(
+  v.literal("thumbs_up"),
+  v.literal("thumbs_down"),
+  v.literal("hide"),
+  v.literal("promote"),
+);
+
+const factorBreakdownValidator = v.object({
+  roleFit: v.number(),
+  stackFit: v.number(),
+  domainFit: v.number(),
+  evidenceStrength: v.number(),
+  recency: v.number(),
+  signalConfidence: v.number(),
+  reachabilityBonus: v.number(),
+});
+
+const resultRowValidator = v.object({
+  scoreId: v.id("candidateScores"),
+  candidateId: v.id("candidates"),
+  rank: v.number(),
+  finalScore: v.number(),
+  baseScore: v.number(),
+  confidence: v.number(),
+  summaryWhy: v.string(),
+  fullName: v.string(),
+  headline: v.string(),
+  currentCompany: v.optional(v.string()),
+  location: v.optional(v.string()),
+  stacks: v.array(v.string()),
+  profileUrl: v.optional(v.string()),
+});
+
+export const getSearchResults = query({
+  args: { requestId: v.optional(v.id("searchRequests")) },
+  returns: v.union(
+    v.object({
+      requestId: v.id("searchRequests"),
+      rawPrompt: v.string(),
+      companyContext: v.optional(v.string()),
+      criteriaJson: v.string(),
+      status: requestStatusValidator,
+      promptVersion: v.string(),
+      rankingVersion: v.optional(v.string()),
+      latestRankingRunId: v.optional(v.id("rankingRuns")),
+      rankingNotes: v.optional(v.string()),
+      errorMessage: v.optional(v.string()),
+      results: v.array(resultRowValidator),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const request =
+      args.requestId !== undefined
+        ? await ctx.db.get(args.requestId)
+        : (
+            await ctx.db
+              .query("searchRequests")
+              .order("desc")
+              .take(1)
+          )[0] ?? null;
+
+    if (!request) {
+      return null;
+    }
+
+    const scores = await ctx.db
+      .query("candidateScores")
+      .withIndex("by_requestId_and_rank", (q) => q.eq("requestId", request._id))
+      .take(25);
+
+    const results = [];
+    for (const score of scores) {
+      const candidate = await ctx.db.get(score.candidateId);
+      if (!candidate) {
+        continue;
+      }
+
+      results.push({
+        scoreId: score._id,
+        candidateId: candidate._id,
+        rank: score.rank,
+        finalScore: score.finalScore,
+        baseScore: score.baseScore,
+        confidence: score.confidence,
+        summaryWhy: score.summaryWhy,
+        fullName: candidate.fullName,
+        headline: candidate.headline,
+        currentCompany: candidate.currentCompany,
+        location: candidate.location,
+        stacks: candidate.stacks,
+        profileUrl: candidate.profileUrl,
+      });
+    }
+
+    const rankingRun = request.latestRankingRunId
+      ? await ctx.db.get(request.latestRankingRunId)
+      : null;
+
+    return {
+      requestId: request._id,
+      rawPrompt: request.rawPrompt,
+      companyContext: request.companyContext,
+      criteriaJson: request.criteriaJson,
+      status: request.status,
+      promptVersion: request.promptVersion,
+      rankingVersion: request.rankingVersion,
+      latestRankingRunId: request.latestRankingRunId,
+      rankingNotes: rankingRun?.notes,
+      errorMessage: request.errorMessage,
+      results,
+    };
+  },
+});
+
+export const getCandidateDossier = query({
+  args: { scoreId: v.id("candidateScores") },
+  returns: v.union(
+    v.object({
+      scoreId: v.id("candidateScores"),
+      candidateId: v.id("candidates"),
+      rank: v.number(),
+      finalScore: v.number(),
+      baseScore: v.number(),
+      confidence: v.number(),
+      summaryWhy: v.string(),
+      topStrengths: v.array(v.string()),
+      risksOrGaps: v.array(v.string()),
+      factorBreakdown: factorBreakdownValidator,
+      candidate: v.object({
+        fullName: v.string(),
+        headline: v.string(),
+        summary: v.string(),
+        currentCompany: v.optional(v.string()),
+        location: v.optional(v.string()),
+        profileUrl: v.optional(v.string()),
+        email: v.optional(v.string()),
+        warmIntroPath: v.optional(v.string()),
+        yearsExperience: v.number(),
+        seniority: v.string(),
+        stacks: v.array(v.string()),
+        domains: v.array(v.string()),
+      }),
+      evidence: v.array(
+        v.object({
+          evidenceId: v.id("candidateEvidence"),
+          title: v.string(),
+          kind: v.union(
+            v.literal("repo"),
+            v.literal("blog"),
+            v.literal("talk"),
+            v.literal("community"),
+            v.literal("employment"),
+            v.literal("network"),
+          ),
+          snippet: v.string(),
+          url: v.optional(v.string()),
+          tags: v.array(v.string()),
+          strength: v.number(),
+          recencyYears: v.number(),
+        }),
+      ),
+      feedback: v.array(
+        v.object({
+          feedbackId: v.id("rankingFeedback"),
+          disposition: feedbackDispositionValidator,
+          note: v.optional(v.string()),
+        }),
+      ),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const score = await ctx.db.get(args.scoreId);
+    if (!score) {
+      return null;
+    }
+
+    const candidate = await ctx.db.get(score.candidateId);
+    if (!candidate) {
+      return null;
+    }
+
+    const evidence = [];
+    for (const evidenceId of score.evidenceRefIds) {
+      const evidenceDoc = await ctx.db.get(evidenceId);
+      if (!evidenceDoc) {
+        continue;
+      }
+
+      evidence.push({
+        evidenceId: evidenceDoc._id,
+        title: evidenceDoc.title,
+        kind: evidenceDoc.kind,
+        snippet: evidenceDoc.snippet,
+        url: evidenceDoc.url,
+        tags: evidenceDoc.tags,
+        strength: evidenceDoc.strength,
+        recencyYears: evidenceDoc.recencyYears,
+      });
+    }
+
+    const feedbackDocs = await ctx.db
+      .query("rankingFeedback")
+      .withIndex("by_scoreId", (q) => q.eq("scoreId", score._id))
+      .take(20);
+
+    return {
+      scoreId: score._id,
+      candidateId: candidate._id,
+      rank: score.rank,
+      finalScore: score.finalScore,
+      baseScore: score.baseScore,
+      confidence: score.confidence,
+      summaryWhy: score.summaryWhy,
+      topStrengths: score.topStrengths,
+      risksOrGaps: score.risksOrGaps,
+      factorBreakdown: score.factorBreakdown,
+      candidate: {
+        fullName: candidate.fullName,
+        headline: candidate.headline,
+        summary: candidate.summary,
+        currentCompany: candidate.currentCompany,
+        location: candidate.location,
+        profileUrl: candidate.profileUrl,
+        email: candidate.email,
+        warmIntroPath: candidate.warmIntroPath,
+        yearsExperience: candidate.yearsExperience,
+        seniority: candidate.seniority,
+        stacks: candidate.stacks,
+        domains: candidate.domains,
+      },
+      evidence,
+      feedback: feedbackDocs.map((item) => ({
+        feedbackId: item._id,
+        disposition: item.disposition,
+        note: item.note,
+      })),
+    };
+  },
+});
+
+export const submitFeedback = mutation({
+  args: {
+    requestId: v.id("searchRequests"),
+    scoreId: v.id("candidateScores"),
+    disposition: feedbackDispositionValidator,
+    note: v.optional(v.string()),
+  },
+  returns: v.id("rankingFeedback"),
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("rankingFeedback", {
+      requestId: args.requestId,
+      scoreId: args.scoreId,
+      disposition: args.disposition,
+      note: args.note,
+    });
+  },
+});

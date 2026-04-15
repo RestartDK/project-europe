@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
@@ -8,30 +6,12 @@ import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 import { searchIntakeAgent } from "./agents";
-
-const criteriaSchema = z.object({
-  roleTitle: z.string().describe("Target role or title"),
-  stack: z
-    .array(z.string())
-    .describe("Primary technologies: languages, frameworks, tools"),
-  domain: z.string().describe("Domain or industry focus"),
-  seniority: z
-    .string()
-    .optional()
-    .describe("Seniority or level, if specified (e.g. senior, staff)"),
-  mustHave: z
-    .array(z.string())
-    .describe("Hard requirements and non-negotiables"),
-  niceToHave: z.array(z.string()).describe("Soft preferences"),
-  evidenceSignals: z
-    .array(z.string())
-    .describe(
-      "Evidence to prioritize: OSS, talks, blogs, performance work, distributed systems, etc.",
-    ),
-  sharpeningQuestions: z
-    .array(z.string())
-    .describe("2-3 follow-up questions to clarify the request"),
-});
+import {
+  extractCriteriaFallback,
+  promptVersion,
+  searchCriteriaSchema,
+  type SearchCriteria,
+} from "./lib/ranking";
 
 export const saveSearchRequest = internalMutation({
   args: {
@@ -39,6 +19,7 @@ export const saveSearchRequest = internalMutation({
     rawPrompt: v.string(),
     companyContext: v.optional(v.string()),
     criteriaJson: v.string(),
+    promptVersion: v.string(),
   },
   returns: v.id("searchRequests"),
   handler: async (ctx, args) => {
@@ -48,6 +29,7 @@ export const saveSearchRequest = internalMutation({
       companyContext: args.companyContext,
       criteriaJson: args.criteriaJson,
       status: "ready_for_clay",
+      promptVersion: args.promptVersion,
     });
   },
 });
@@ -90,17 +72,27 @@ export const extractSearchCriteria = action({
       .filter((x): x is string => Boolean(x))
       .join("\n\n");
 
-    const result = await searchIntakeAgent.generateObject(
-      ctx,
-      { threadId },
-      {
-        system,
-        prompt,
-        schema: criteriaSchema,
-      },
+    let criteria: SearchCriteria = extractCriteriaFallback(
+      args.prompt,
+      args.companyContext,
     );
 
-    const criteria = result.object;
+    try {
+      const result = await searchIntakeAgent.generateObject(
+        ctx,
+        { threadId },
+        {
+          system,
+          prompt,
+          schema: searchCriteriaSchema,
+        },
+      );
+
+      criteria = result.object;
+    } catch {
+      criteria = extractCriteriaFallback(args.prompt, args.companyContext);
+    }
+
     const criteriaJson = JSON.stringify(criteria, null, 2);
 
     const requestId = await ctx.runMutation(internal.intake.saveSearchRequest, {
@@ -108,6 +100,7 @@ export const extractSearchCriteria = action({
       rawPrompt: args.prompt,
       companyContext: args.companyContext,
       criteriaJson,
+      promptVersion,
     });
 
     await ctx.runAction(internal.intake.enqueueClayStub, { requestId });
