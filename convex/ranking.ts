@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { v } from "convex/values";
 
 import { deriveInfoSources } from "./lib/infoSources";
@@ -10,13 +10,6 @@ const requestStatusValidator = v.union(
   v.literal("ranking"),
   v.literal("ranked"),
   v.literal("error"),
-);
-
-const feedbackDispositionValidator = v.union(
-  v.literal("thumbs_up"),
-  v.literal("thumbs_down"),
-  v.literal("hide"),
-  v.literal("promote"),
 );
 
 const factorBreakdownValidator = v.object({
@@ -214,6 +207,7 @@ export const getCandidateDossier = query({
         socialGithub: v.optional(v.string()),
         socialBlog: v.optional(v.string()),
         socialTwitter: v.optional(v.string()),
+        age: v.optional(v.number()),
       }),
       evidence: v.array(
         v.object({
@@ -232,13 +226,7 @@ export const getCandidateDossier = query({
           tags: v.array(v.string()),
           strength: v.number(),
           recencyYears: v.number(),
-        }),
-      ),
-      feedback: v.array(
-        v.object({
-          feedbackId: v.id("rankingFeedback"),
-          disposition: feedbackDispositionValidator,
-          note: v.optional(v.string()),
+          relevanceDisplay: v.optional(v.string()),
         }),
       ),
     }),
@@ -255,14 +243,14 @@ export const getCandidateDossier = query({
       return null;
     }
 
-    const evidence = [];
-    for (const evidenceId of score.evidenceRefIds) {
-      const evidenceDoc = await ctx.db.get(evidenceId);
-      if (!evidenceDoc) {
-        continue;
-      }
+    const evidenceDocs = await ctx.db
+      .query("candidateEvidence")
+      .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
+      .take(200);
 
-      evidence.push({
+    const evidence = [...evidenceDocs]
+      .sort((a, b) => b.strength - a.strength)
+      .map((evidenceDoc) => ({
         evidenceId: evidenceDoc._id,
         title: evidenceDoc.title,
         kind: evidenceDoc.kind,
@@ -271,13 +259,8 @@ export const getCandidateDossier = query({
         tags: evidenceDoc.tags,
         strength: evidenceDoc.strength,
         recencyYears: evidenceDoc.recencyYears,
-      });
-    }
-
-    const feedbackDocs = await ctx.db
-      .query("rankingFeedback")
-      .withIndex("by_scoreId", (q) => q.eq("scoreId", score._id))
-      .take(20);
+        relevanceDisplay: evidenceDoc.relevanceDisplay,
+      }));
 
     const avatarDisplayUrl = `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(candidate.slug)}`;
 
@@ -312,31 +295,9 @@ export const getCandidateDossier = query({
         socialGithub: candidate.socialGithub,
         socialBlog: candidate.socialBlog,
         socialTwitter: candidate.socialTwitter,
+        age: candidate.age,
       },
       evidence,
-      feedback: feedbackDocs.map((item) => ({
-        feedbackId: item._id,
-        disposition: item.disposition,
-        note: item.note,
-      })),
     };
-  },
-});
-
-export const submitFeedback = mutation({
-  args: {
-    requestId: v.id("searchRequests"),
-    scoreId: v.id("candidateScores"),
-    disposition: feedbackDispositionValidator,
-    note: v.optional(v.string()),
-  },
-  returns: v.id("rankingFeedback"),
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("rankingFeedback", {
-      requestId: args.requestId,
-      scoreId: args.scoreId,
-      disposition: args.disposition,
-      note: args.note,
-    });
   },
 });

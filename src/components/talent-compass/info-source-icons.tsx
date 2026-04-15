@@ -1,4 +1,4 @@
-import { Globe } from "lucide-react";
+import { Briefcase, Globe, Mic, Network, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,14 @@ export type InfoSourceId =
   | "website"
   | "reddit"
   | "youtube";
+
+/** Evidence row: URL-aware when possible, else inferred from Convex `kind`. */
+export type DossierEvidenceSourceId =
+  | InfoSourceId
+  | "employment"
+  | "community"
+  | "talk"
+  | "network";
 
 const iconInner = "size-3 shrink-0 text-muted-foreground";
 
@@ -61,6 +69,107 @@ const LABELS: Record<InfoSourceId, string> = {
   reddit: "Reddit",
   youtube: "YouTube",
 };
+
+const DOSSIER_LABELS: Record<DossierEvidenceSourceId, string> = {
+  ...LABELS,
+  employment: "Employment",
+  community: "Community",
+  talk: "Talk",
+  network: "Network",
+};
+
+export function deriveDossierEvidenceSource(
+  url: string | undefined,
+  kind: "repo" | "blog" | "talk" | "community" | "employment" | "network",
+): DossierEvidenceSourceId {
+  const u = (url ?? "").toLowerCase();
+  if (u.includes("linkedin.com")) return "linkedin";
+  if (u.includes("github.com")) return "github";
+  if (u.includes("reddit.com")) return "reddit";
+  if (u.includes("youtube.com") || u.includes("youtu.be")) return "youtube";
+  if (u.includes("twitter.com") || u.includes("x.com")) return "x";
+  if (kind === "repo") return "github";
+  if (kind === "employment") return "employment";
+  if (kind === "community") return "community";
+  if (kind === "talk") return "talk";
+  if (kind === "network") return "network";
+  return "website";
+}
+
+const dossierIconClass = "size-4 shrink-0 text-muted-foreground";
+
+function DossierKindIcon({ id, className }: { id: DossierEvidenceSourceId; className?: string }) {
+  switch (id) {
+    case "employment":
+      return <Briefcase className={cn(dossierIconClass, className)} strokeWidth={1.75} aria-hidden />;
+    case "community":
+      return <Users className={cn(dossierIconClass, className)} strokeWidth={1.75} aria-hidden />;
+    case "talk":
+      return <Mic className={cn(dossierIconClass, className)} strokeWidth={1.75} aria-hidden />;
+    case "network":
+      return <Network className={cn(dossierIconClass, className)} strokeWidth={1.75} aria-hidden />;
+    case "linkedin":
+      return <LinkedInIcon className={className} />;
+    case "github":
+      return <GitHubIcon className={className} />;
+    case "x":
+      return <XIcon className={className} />;
+    case "reddit":
+      return <RedditIcon className={className} />;
+    case "youtube":
+      return <YouTubeIcon className={className} />;
+    case "website":
+      return <Globe className={cn(dossierIconClass, className)} strokeWidth={2} aria-hidden />;
+    default:
+      return null;
+  }
+}
+
+export function DossierEvidenceSourceIcon({
+  url,
+  kind,
+  className,
+}: {
+  url: string | undefined;
+  kind: "repo" | "blog" | "talk" | "community" | "employment" | "network";
+  className?: string;
+}) {
+  const id = deriveDossierEvidenceSource(url, kind);
+  return (
+    <span
+      title={DOSSIER_LABELS[id]}
+      className={cn(
+        "inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted/40",
+        className,
+      )}
+    >
+      <DossierKindIcon id={id} />
+    </span>
+  );
+}
+
+/** Compact brand marks for relevance / metric pills (same glyphs as row source, smaller). */
+const metricBrandClass = "size-3.5 shrink-0";
+
+export function MetricBrandGitHub({ className }: { className?: string }) {
+  return <GitHubIcon className={cn(metricBrandClass, "text-foreground", className)} />;
+}
+
+export function MetricBrandReddit({ className }: { className?: string }) {
+  return <RedditIcon className={cn(metricBrandClass, "text-[#FF4500]", className)} />;
+}
+
+export function MetricBrandYouTube({ className }: { className?: string }) {
+  return <YouTubeIcon className={cn(metricBrandClass, "text-[#FF0033]", className)} />;
+}
+
+export function MetricBrandLinkedIn({ className }: { className?: string }) {
+  return <LinkedInIcon className={cn(metricBrandClass, "text-[#0A66C2]", className)} />;
+}
+
+export function MetricBrandX({ className }: { className?: string }) {
+  return <XIcon className={cn(metricBrandClass, "text-foreground", className)} />;
+}
 
 function iconFor(id: InfoSourceId) {
   switch (id) {

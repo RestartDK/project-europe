@@ -77,6 +77,7 @@ export default defineSchema({
     socialGithub: v.optional(v.string()),
     socialBlog: v.optional(v.string()),
     socialTwitter: v.optional(v.string()),
+    age: v.optional(v.number()),
   })
     .index("by_requestId", ["requestId"])
     .index("by_requestId_and_slug", ["requestId", "slug"]),
@@ -99,6 +100,7 @@ export default defineSchema({
     strength: v.number(),
     recencyYears: v.number(),
     tags: v.array(v.string()),
+    relevanceDisplay: v.optional(v.string()),
   })
     .index("by_requestId_and_candidateId", ["requestId", "candidateId"])
     .index("by_candidateId", ["candidateId"]),
@@ -150,18 +152,6 @@ export default defineSchema({
     .index("by_requestId_and_rank", ["requestId", "rank"])
     .index("by_rankingRunId_and_rank", ["rankingRunId", "rank"])
     .index("by_candidateId", ["candidateId"]),
-
-  rankingFeedback: defineTable({
-    requestId: v.id("searchRequests"),
-    scoreId: v.id("candidateScores"),
-    disposition: v.union(
-      v.literal("thumbs_up"),
-      v.literal("thumbs_down"),
-      v.literal("hide"),
-      v.literal("promote"),
-    ),
-    note: v.optional(v.string()),
-  }).index("by_scoreId", ["scoreId"]),
 
   searches: defineTable({
     query: v.string(),
