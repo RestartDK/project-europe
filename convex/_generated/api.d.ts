@@ -10,6 +10,7 @@
 
 import type * as agent from "../agent.js";
 import type * as agents from "../agents.js";
+import type * as candidates from "../candidates.js";
 import type * as clay from "../clay.js";
 import type * as http from "../http.js";
 import type * as intake from "../intake.js";
@@ -17,6 +18,8 @@ import type * as lib_candidateStubs from "../lib/candidateStubs.js";
 import type * as lib_ranking from "../lib/ranking.js";
 import type * as ranking from "../ranking.js";
 import type * as rankingActions from "../rankingActions.js";
+import type * as searchAction from "../searchAction.js";
+import type * as searches from "../searches.js";
 import type * as status from "../status.js";
 
 import type {
@@ -28,6 +31,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   agent: typeof agent;
   agents: typeof agents;
+  candidates: typeof candidates;
   clay: typeof clay;
   http: typeof http;
   intake: typeof intake;
@@ -35,6 +39,8 @@ declare const fullApi: ApiFromModules<{
   "lib/ranking": typeof lib_ranking;
   ranking: typeof ranking;
   rankingActions: typeof rankingActions;
+  searchAction: typeof searchAction;
+  searches: typeof searches;
   status: typeof status;
 }>;
 

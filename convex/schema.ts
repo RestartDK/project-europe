@@ -126,5 +126,42 @@ export default defineSchema({
     ),
     note: v.optional(v.string()),
   }).index("by_scoreId", ["scoreId"]),
-});
 
+  searches: defineTable({
+    query: v.string(),
+    apolloParams: v.object({
+      titles: v.array(v.string()),
+      locations: v.array(v.string()),
+      keywords: v.string(),
+      skills: v.array(v.string()),
+    }),
+    status: v.union(
+      v.literal("searching"),
+      v.literal("enriching"),
+      v.literal("complete"),
+      v.literal("error"),
+    ),
+    candidateCount: v.number(),
+    createdAt: v.number(),
+  }),
+
+  talentCandidates: defineTable({
+    searchId: v.id("searches"),
+    name: v.string(),
+    currentTitle: v.optional(v.string()),
+    currentCompany: v.optional(v.string()),
+    linkedinUrl: v.optional(v.string()),
+    location: v.optional(v.string()),
+    apolloId: v.optional(v.string()),
+    enriched: v.boolean(),
+    enrichedAt: v.optional(v.number()),
+    skills: v.optional(v.array(v.string())),
+    accomplishmentSummary: v.optional(v.string()),
+    movabilityScore: v.optional(v.number()),
+    movabilityReason: v.optional(v.string()),
+    githubUrl: v.optional(v.string()),
+    rawClayData: v.optional(v.any()),
+  })
+    .index("by_searchId", ["searchId"])
+    .index("by_linkedinUrl", ["linkedinUrl"]),
+});

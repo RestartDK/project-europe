@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { api } from "../convex/_generated/api"
 import type { Id } from "../convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
+import { CandidateList } from "./components/CandidateList"
+import { SearchInput } from "./components/SearchInput"
 
 type SearchResultRow = {
   scoreId: Id<"candidateScores">
@@ -123,7 +125,7 @@ function ScoreBar({
   )
 }
 
-export function App() {
+function RankingPanel() {
   const extractSearchCriteria = useAction(api.intake.extractSearchCriteria)
   const submitFeedback = useMutation(api.ranking.submitFeedback)
 
@@ -195,8 +197,7 @@ export function App() {
   }
 
   return (
-    <div className="min-h-svh bg-background p-6">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_1.8fr]">
           <section className="rounded-2xl border bg-card p-6 text-sm shadow-sm">
             <div className="space-y-2">
@@ -605,9 +606,57 @@ export function App() {
             </div>
           )}
         </section>
-      </div>
     </div>
   )
 }
 
-export default App
+function TalentSearchPanel() {
+  const [currentSearchId, setCurrentSearchId] = useState<Id<"searches"> | null>(null)
+
+  return (
+    <div className="mx-auto flex min-h-svh max-w-4xl flex-col gap-8 p-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">Talent Search</h1>
+        <p className="text-sm text-muted-foreground">
+          Describe who you're looking for in plain English.
+        </p>
+      </div>
+
+      <SearchInput onSearchStart={setCurrentSearchId} />
+
+      {currentSearchId && <CandidateList searchId={currentSearchId} />}
+    </div>
+  )
+}
+
+type AppTab = "ranking" | "talent"
+
+export default function App() {
+  const [tab, setTab] = useState<AppTab>("ranking")
+
+  return (
+    <div className="min-h-svh bg-background">
+      <div className="sticky top-0 z-10 border-b bg-background/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="mx-auto flex max-w-7xl flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={tab === "ranking" ? "default" : "outline"}
+            onClick={() => setTab("ranking")}
+          >
+            Ranking
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={tab === "talent" ? "default" : "outline"}
+            onClick={() => setTab("talent")}
+          >
+            Talent search
+          </Button>
+        </div>
+      </div>
+      {tab === "ranking" ? <RankingPanel /> : <TalentSearchPanel />}
+    </div>
+  )
+}
