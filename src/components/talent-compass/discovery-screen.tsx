@@ -61,7 +61,7 @@ export function DiscoveryScreen({ onBack, onComplete }: Props) {
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center">
-      <Card className="w-full max-w-sm border-none bg-transparent py-0 shadow-none ring-0">
+      <Card className="w-full max-w-sm overflow-visible border-none bg-transparent py-0 shadow-none ring-0">
         <CardContent className="px-0">
           <motion.div
             className="w-full text-center"

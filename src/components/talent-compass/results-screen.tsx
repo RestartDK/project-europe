@@ -30,7 +30,7 @@ const weightKeys = ["github", "blog", "network", "oss"] as const
 
 const rowCn = cn(
   "cursor-pointer border-b border-border transition-colors last:border-b-0",
-  "hover:bg-secondary/40"
+  "hover:bg-secondary"
 )
 
 const headCn =
@@ -39,14 +39,20 @@ const headCn =
 const headCnCenter =
   "h-auto px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground"
 
+/** Right edge drawn with ::after so it stays with the sticky column (border-r can detach with table border-collapse). */
+const stickyCandidateEdgeAfter =
+  "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-[1] after:w-px after:bg-border after:content-['']"
+
 /** Sticky first column only when the table scrolls horizontally. */
 const stickyCandidateHead = cn(
   headCn,
-  "sticky left-0 z-30 border-r border-border bg-secondary/40"
+  "sticky left-0 z-30 bg-secondary",
+  stickyCandidateEdgeAfter
 )
 const stickyCandidateCell = cn(
   "px-4 py-2.5",
-  "sticky left-0 z-10 border-r border-border bg-card group-hover:bg-secondary/40"
+  "sticky left-0 z-10 bg-card group-hover:bg-secondary",
+  stickyCandidateEdgeAfter
 )
 
 function SignalCell({ value }: { value: number }) {
@@ -142,7 +148,7 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
         <ToggleGroupItem
           key={f}
           value={f}
-          className="rounded-full px-3 text-[11px] font-medium data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background"
+          className="rounded-full bg-background px-3 text-[11px] font-medium data-[state=on]:border-foreground data-[state=on]:bg-foreground data-[state=on]:text-background"
         >
           {f}
         </ToggleGroupItem>
@@ -176,7 +182,7 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
         <ToggleGroupItem
           key={key}
           value={key}
-          className="rounded-full px-2.5 text-[10px] font-medium capitalize data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground"
+          className="rounded-full bg-background px-2.5 text-[10px] font-medium capitalize"
         >
           {key}
         </ToggleGroupItem>
@@ -204,14 +210,19 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
           </p>
         </header>
 
-        <div className="mb-4 grid grid-cols-2 items-start gap-2 overflow-visible md:hidden">
+        <div
+          className={cn(
+            "mb-4 grid grid-cols-2 items-start gap-2 overflow-visible md:hidden",
+            (mobileStackOpen || mobileWeightsOpen) && "relative z-40"
+          )}
+        >
           <details
             ref={mobileStackRef}
             open={mobileStackOpen}
             onToggle={(e) => setMobileStackOpen(e.currentTarget.open)}
-            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border/60 open:z-20"
+            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border open:z-20"
           >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-2xl px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
               <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 stack
               </span>
@@ -223,7 +234,7 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
                 className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
               />
             </summary>
-            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border/60">
+            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border">
               {roleToggleGroup}
             </div>
           </details>
@@ -232,9 +243,9 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
             ref={mobileWeightsRef}
             open={mobileWeightsOpen}
             onToggle={(e) => setMobileWeightsOpen(e.currentTarget.open)}
-            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border/60 open:z-20"
+            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border open:z-20"
           >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-2xl px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
               <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                 weights
               </span>
@@ -246,7 +257,7 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
                 className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
               />
             </summary>
-            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border/60">
+            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border">
               {weightsToggleGroup("panel")}
             </div>
           </details>
@@ -271,10 +282,10 @@ export function ResultsScreen({ onEditCriteria, onSelectCandidate }: Props) {
           </div>
         </div>
 
-        <Card className="overflow-hidden rounded-2xl py-0 ring-1 ring-border">
+        <Card className="relative z-0 overflow-hidden rounded-2xl py-0 ring-1 ring-border">
           <Table className="min-w-max">
             <TableHeader>
-              <TableRow className="border-b border-border bg-secondary/40 hover:bg-secondary/40">
+              <TableRow className="border-b border-border bg-secondary hover:bg-secondary">
                 <TableHead className={stickyCandidateHead}>candidate</TableHead>
                 <TableHead className={headCn}>role</TableHead>
                 <TableHead className={headCn}>company</TableHead>

@@ -10,18 +10,9 @@ import {
 } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
 
 const flowPrimaryButtonClassName =
   "h-11 w-full min-w-0 rounded-2xl px-5 text-sm font-semibold shadow-sm ring-1 ring-foreground/10 transition-[box-shadow,transform] hover:shadow-md hover:ring-foreground/15 active:translate-y-px"
-
-const sharpeningQuestions = [
-  "remote-friendly?",
-  "senior+ only?",
-  "open to relocation?",
-  "active oss preferred?",
-  "startup exp matters?",
-]
 
 type Props = {
   step: 1 | 2
@@ -30,8 +21,6 @@ type Props = {
   onCompanyChange: (value: string) => void
   lookingFor: string
   onLookingForChange: (value: string) => void
-  selectedChips: Set<string>
-  onToggleChip: (q: string) => void
   onStartDiscovery: () => void
 }
 
@@ -42,30 +31,28 @@ export function ContextScreen({
   onCompanyChange,
   lookingFor,
   onLookingForChange,
-  selectedChips,
-  onToggleChip,
   onStartDiscovery,
 }: Props) {
   return (
     <div className="flex min-h-screen items-center justify-center px-5 sm:px-10 md:px-12 lg:px-16">
       <motion.div
-        className="w-full max-w-md sm:max-w-lg"
+        className="relative w-full max-w-md sm:max-w-lg"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
+        {step === 2 && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="absolute left-0 top-0 z-10 h-8 w-fit -translate-y-[calc(100%+0.5rem)] justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => onStepChange(1)}
+          >
+            ← back
+          </Button>
+        )}
         <Card className="border-none bg-transparent py-0 shadow-none ring-0">
           <CardHeader className="px-0">
-            {step === 2 && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="-ml-2 mb-2 h-8 w-fit justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => onStepChange(1)}
-              >
-                ← back
-              </Button>
-            )}
             <div className="space-y-1.5">
               <CardTitle className="font-heading text-2xl font-bold">
                 find your next hire
@@ -120,36 +107,16 @@ export function ContextScreen({
               </Label>
               <Textarea
                 id="looking"
-                rows={3}
-                className="min-h-20 rounded-2xl text-sm"
+                rows={4}
+                className="min-h-24 rounded-2xl text-sm"
                 placeholder="e.g. Senior backend engineer, strong in Rust or Go, distributed systems..."
                 value={lookingFor}
                 onChange={(e) => onLookingForChange(e.target.value)}
               />
 
-              <div>
-                <CardDescription className="mb-2 text-[10px] font-medium">
-                  sharpen
-                </CardDescription>
-                <div className="flex flex-wrap gap-1.5">
-                  {sharpeningQuestions.map((q) => (
-                    <Button
-                      key={q}
-                      type="button"
-                      size="sm"
-                      variant={selectedChips.has(q) ? "default" : "secondary"}
-                      className="h-8 rounded-full px-3 text-[11px] font-medium"
-                      onClick={() => onToggleChip(q)}
-                    >
-                      {q}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
               <Button
                 type="button"
-                className={cn("mt-1", flowPrimaryButtonClassName)}
+                className={flowPrimaryButtonClassName}
                 disabled={!lookingFor.trim()}
                 onClick={onStartDiscovery}
               >

@@ -14,24 +14,11 @@ export function App() {
   const [contextStep, setContextStep] = useState<1 | 2>(1)
   const [company, setCompany] = useState("")
   const [lookingFor, setLookingFor] = useState("")
-  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set())
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
     null
   )
 
   const handleDiscoveryComplete = useCallback(() => setScreen("results"), [])
-
-  const toggleChip = useCallback((q: string) => {
-    setSelectedChips((prev) => {
-      const next = new Set(prev)
-      if (next.has(q)) {
-        next.delete(q)
-      } else {
-        next.add(q)
-      }
-      return next
-    })
-  }, [])
 
   const goToDiscovery = useCallback(() => setScreen("discovery"), [])
   const backFromDiscovery = useCallback(() => {
@@ -55,8 +42,6 @@ export function App() {
           onCompanyChange={setCompany}
           lookingFor={lookingFor}
           onLookingForChange={setLookingFor}
-          selectedChips={selectedChips}
-          onToggleChip={toggleChip}
           onStartDiscovery={goToDiscovery}
         />
       )}
