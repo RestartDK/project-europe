@@ -2,6 +2,13 @@ import { useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -43,15 +50,16 @@ export function ContextScreen({ onStartDiscovery }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="mb-8">
-          <h1 className="font-heading text-2xl font-bold text-foreground">
-            find your next hire
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            scanning the open internet to find matches
-          </p>
-        </div>
-
+        <Card className="border-none bg-transparent py-0 shadow-none ring-0">
+          <CardHeader className="px-0">
+            <CardTitle className="font-heading text-2xl font-bold">
+              find your next hire
+            </CardTitle>
+            <CardDescription>
+              scanning the open internet to find matches
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-0">
         <AnimatePresence mode="wait">
           {step === 1 && (
             <motion.div
@@ -104,9 +112,9 @@ export function ContextScreen({ onStartDiscovery }: Props) {
               />
 
               <div>
-                <p className="mb-2 text-[10px] text-muted-foreground">
+                <CardDescription className="mb-2 text-[10px] font-medium">
                   sharpen
-                </p>
+                </CardDescription>
                 <div className="flex flex-wrap gap-1.5">
                   {sharpeningQuestions.map((q) => (
                     <Button
@@ -134,6 +142,8 @@ export function ContextScreen({ onStartDiscovery }: Props) {
             </motion.div>
           )}
         </AnimatePresence>
+          </CardContent>
+        </Card>
       </motion.div>
     </div>
   )

@@ -3,9 +3,25 @@ import { motion } from "framer-motion"
 
 import { type Candidate, candidates } from "@/data/candidates"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card } from "@/components/ui/card"
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { cn } from "@/lib/utils"
 
 type Props = {
   onSelectCandidate: (c: Candidate) => void
@@ -15,16 +31,30 @@ const filters = ["all", "backend", "frontend", "infra", "ml", "security"]
 
 const weightKeys = ["github", "blog", "network", "oss"] as const
 
-function SignalDot({ value }: { value: number }) {
-  const color =
+const rowCn = cn(
+  "cursor-pointer border-b border-border transition-colors last:border-b-0",
+  "hover:bg-secondary/40"
+)
+
+const headCn =
+  "h-auto px-4 py-2.5 text-left text-[10px] font-medium text-muted-foreground"
+
+const headCnCenter =
+  "h-auto px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground"
+
+function SignalCell({ value }: { value: number }) {
+  const indicatorClass =
     value >= 85
-      ? "bg-success"
+      ? "[&_[data-slot=progress-indicator]]:bg-success"
       : value >= 65
-        ? "bg-foreground/40"
-        : "bg-muted-foreground/30"
+        ? "[&_[data-slot=progress-indicator]]:bg-foreground/40"
+        : "[&_[data-slot=progress-indicator]]:bg-muted-foreground/30"
   return (
-    <div className="flex items-center gap-1.5">
-      <div className={`size-1.5 rounded-full ${color}`} />
+    <div className="flex flex-col items-center justify-center gap-1">
+      <Progress
+        value={value}
+        className={cn("h-1 w-8 bg-secondary", indicatorClass)}
+      />
       <span className="text-[11px] text-muted-foreground tabular-nums">
         {value}
       </span>
@@ -33,26 +63,26 @@ function SignalDot({ value }: { value: number }) {
 }
 
 function MatchBar({ score }: { score: number }) {
-  const barColor =
+  const indicatorClass =
     score >= 85
-      ? "var(--success)"
+      ? "[&_[data-slot=progress-indicator]]:bg-[var(--success)]"
       : score >= 70
-        ? "var(--warning)"
-        : "var(--muted-foreground)"
+        ? "[&_[data-slot=progress-indicator]]:bg-[var(--warning)]"
+        : "[&_[data-slot=progress-indicator]]:bg-muted-foreground"
   return (
     <div className="flex min-w-[110px] items-center gap-2">
-      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${score}%`, backgroundColor: barColor }}
-        />
-      </div>
+      <Progress
+        value={score}
+        className={cn("h-1.5 flex-1 bg-secondary", indicatorClass)}
+      />
       <span className="w-6 text-right text-[11px] font-medium text-foreground tabular-nums">
         {score}
       </span>
     </div>
   )
 }
+
+const MotionTableRow = motion.create(TableRow)
 
 export function ResultsScreen({ onSelectCandidate }: Props) {
   const [activeFilter, setActiveFilter] = useState("all")
@@ -68,14 +98,16 @@ export function ResultsScreen({ onSelectCandidate }: Props) {
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-6 py-8">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="mb-5">
-          <h2 className="font-heading text-xl font-bold text-foreground">
-            discovery results
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            {candidates.length} candidates
-          </p>
-        </div>
+        <Card className="mb-5 border-none bg-transparent py-0 shadow-none ring-0">
+          <CardHeader className="px-0">
+            <CardTitle className="font-heading text-xl font-bold">
+              discovery results
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {candidates.length} candidates
+            </CardDescription>
+          </CardHeader>
+        </Card>
 
         <div className="mb-4 flex flex-wrap items-center gap-1.5">
           <ToggleGroup
@@ -104,9 +136,9 @@ export function ResultsScreen({ onSelectCandidate }: Props) {
           />
 
           <div className="flex w-full flex-wrap items-center gap-1.5 sm:ml-auto sm:w-auto">
-            <span className="mr-1 text-[10px] text-muted-foreground">
+            <Label className="mr-1 text-[10px] text-muted-foreground">
               weights
-            </span>
+            </Label>
             <ToggleGroup
               type="multiple"
               value={activeWeightValues}
@@ -137,103 +169,82 @@ export function ResultsScreen({ onSelectCandidate }: Props) {
         </div>
 
         <Card className="overflow-hidden rounded-2xl py-0 ring-1 ring-border">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-secondary/40">
-                  <th className="px-4 py-2.5 text-left text-[10px] font-medium text-muted-foreground">
-                    candidate
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-medium text-muted-foreground">
-                    role
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-medium text-muted-foreground">
-                    company
-                  </th>
-                  <th className="px-4 py-2.5 text-left text-[10px] font-medium text-muted-foreground">
-                    match
-                  </th>
-                  <th className="px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground">
-                    gh
-                  </th>
-                  <th className="px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground">
-                    blog
-                  </th>
-                  <th className="px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground">
-                    net
-                  </th>
-                  <th className="px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground">
-                    oss
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {candidates.map((c, i) => (
-                  <motion.tr
-                    key={c.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}
-                    onClick={() => onSelectCandidate(c)}
-                    className="group cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-secondary/40"
-                  >
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="size-6 rounded-full">
-                          <AvatarImage src={c.avatar} alt={c.name} />
-                          <AvatarFallback className="text-[10px]">
-                            {c.name.slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs text-foreground group-hover:underline">
-                          {c.name.toLowerCase()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="text-xs text-foreground">
-                        {c.role.toLowerCase()}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {c.stack.slice(0, 3).join(" · ").toLowerCase()}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-1.5">
-                        <img
-                          src={c.companyLogo}
-                          alt={c.company}
-                          className="size-3.5 rounded-full bg-secondary object-contain"
-                          onError={(e) => {
-                            ;(e.target as HTMLImageElement).style.display =
-                              "none"
-                          }}
-                        />
-                        <span className="text-[11px] text-muted-foreground">
-                          {c.company.toLowerCase()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <MatchBar score={c.matchScore} />
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <SignalDot value={c.githubSignal} />
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <SignalDot value={c.blogSignal} />
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <SignalDot value={c.networkProximity} />
-                    </td>
-                    <td className="px-3 py-2.5 text-center">
-                      <SignalDot value={c.ossContributions} />
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border bg-secondary/40 hover:bg-secondary/40">
+                <TableHead className={headCn}>candidate</TableHead>
+                <TableHead className={headCn}>role</TableHead>
+                <TableHead className={headCn}>company</TableHead>
+                <TableHead className={headCn}>match</TableHead>
+                <TableHead className={headCnCenter}>gh</TableHead>
+                <TableHead className={headCnCenter}>blog</TableHead>
+                <TableHead className={headCnCenter}>net</TableHead>
+                <TableHead className={headCnCenter}>oss</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {candidates.map((c, i) => (
+                <MotionTableRow
+                  key={c.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => onSelectCandidate(c)}
+                  className={cn(rowCn, "group")}
+                >
+                  <TableCell className="px-4 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="size-6 rounded-full">
+                        <AvatarImage src={c.avatar} alt={c.name} />
+                        <AvatarFallback className="text-[10px]">
+                          {c.name.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-foreground group-hover:underline">
+                        {c.name.toLowerCase()}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <div className="text-xs text-foreground">
+                      {c.role.toLowerCase()}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {c.stack.slice(0, 3).join(" · ").toLowerCase()}
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <Avatar className="size-3.5 rounded-full">
+                        <AvatarImage src={c.companyLogo} alt={c.company} />
+                        <AvatarFallback className="text-[7px]">
+                          {c.company.slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-[11px] text-muted-foreground">
+                        {c.company.toLowerCase()}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <MatchBar score={c.matchScore} />
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-center">
+                    <SignalCell value={c.githubSignal} />
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-center">
+                    <SignalCell value={c.blogSignal} />
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-center">
+                    <SignalCell value={c.networkProximity} />
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-center">
+                    <SignalCell value={c.ossContributions} />
+                  </TableCell>
+                </MotionTableRow>
+              ))}
+            </TableBody>
+          </Table>
         </Card>
       </motion.div>
     </div>

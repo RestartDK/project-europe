@@ -3,6 +3,7 @@ import { motion } from "framer-motion"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const steps = [
   "scanning github…",
@@ -54,14 +55,16 @@ export function DiscoveryScreen({ onComplete }: Props) {
             animate={{ opacity: 1 }}
           >
             <motion.div
-              className="mx-auto mb-8 size-3 rounded-full bg-foreground"
+              className="mx-auto mb-8 flex size-3 items-center justify-center"
               animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
               transition={{
                 duration: 1.5,
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-            />
+            >
+              <Skeleton className="size-3 animate-none rounded-full bg-foreground/80" />
+            </motion.div>
 
             <motion.p
               key={currentStep}

@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 
@@ -30,14 +31,10 @@ function BreakdownBar({ label, score }: { label: string; score: number }) {
       <span className="w-24 shrink-0 text-[11px] text-muted-foreground">
         {label.toLowerCase()}
       </span>
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-secondary">
-        <motion.div
-          className="h-full rounded-full bg-foreground/60"
-          initial={{ width: 0 }}
-          animate={{ width: `${score}%` }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        />
-      </div>
+      <Progress
+        value={score}
+        className="h-1 flex-1 bg-secondary [&_[data-slot=progress-indicator]]:bg-foreground/60"
+      />
       <span className="w-6 text-right text-[11px] text-foreground tabular-nums">
         {score}
       </span>
@@ -149,12 +146,13 @@ function NetworkGraph({
                 >
                   <div className="flex gap-0.5">
                     {conn.channels.slice(0, 2).map((ch) => (
-                      <span
+                      <Badge
                         key={ch.type}
-                        className="rounded bg-secondary px-1 py-px text-[7px] text-muted-foreground"
+                        variant="secondary"
+                        className="h-4 rounded px-1 py-0 text-[7px] font-normal text-muted-foreground"
                       >
                         {channelIcon[ch.type]}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </foreignObject>
@@ -400,22 +398,19 @@ export function DossierScreen({ candidate: c, onBack }: Props) {
                   <AvatarFallback>{c.name.slice(0, 2)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-heading text-base font-bold text-foreground">
+                  <CardTitle className="font-heading text-base font-bold">
                     {c.name.toLowerCase()}
-                  </h2>
-                  <p className="text-[11px] text-muted-foreground">
+                  </CardTitle>
+                  <CardDescription className="text-[11px]">
                     {c.role.toLowerCase()}
-                  </p>
+                  </CardDescription>
                   <div className="mt-0.5 flex items-center gap-1.5">
-                    <img
-                      src={c.companyLogo}
-                      alt={c.company}
-                      className="size-3 rounded-full bg-secondary object-contain"
-                      onError={(e) => {
-                        const el = e.target as HTMLImageElement
-                        el.style.display = "none"
-                      }}
-                    />
+                    <Avatar className="size-3 rounded-full">
+                      <AvatarImage src={c.companyLogo} alt={c.company} />
+                      <AvatarFallback className="text-[6px]">
+                        {c.company.slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
                     <span className="text-[10px] text-muted-foreground">
                       {c.company.toLowerCase()}
                     </span>
@@ -465,9 +460,9 @@ export function DossierScreen({ candidate: c, onBack }: Props) {
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
                   breakdown
-                </h3>
+                </CardTitle>
                 {c.matchBreakdown.map((b) => (
                   <BreakdownBar key={b.label} label={b.label} score={b.score} />
                 ))}
@@ -483,27 +478,24 @@ export function DossierScreen({ candidate: c, onBack }: Props) {
                     repos
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 px-5 pt-3">
-                  {c.repos.map((repo) => (
-                    <div
-                      key={repo.name}
-                      className="border-b border-border pb-2.5 last:border-0 last:pb-0"
-                    >
-                      <a
-                        href="#"
-                        className="text-xs font-medium text-foreground hover:underline"
-                      >
-                        {repo.name}
-                      </a>
-                      <span className="ml-1.5 text-[10px] text-muted-foreground">
-                        ★ {repo.stars}
-                      </span>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {repo.description.toLowerCase()}
-                      </p>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground/60 italic">
-                        ↳ {repo.relevance.toLowerCase()}
-                      </p>
+                <CardContent className="space-y-0 px-5 pt-3">
+                  {c.repos.map((repo, index) => (
+                    <div key={repo.name}>
+                      {index > 0 && <Separator className="my-2.5" />}
+                      <div className="pb-0.5">
+                        <Button variant="link" asChild className="h-auto p-0 text-xs font-medium">
+                          <a href="#">{repo.name}</a>
+                        </Button>
+                        <span className="ml-1.5 text-[10px] text-muted-foreground">
+                          ★ {repo.stars}
+                        </span>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {repo.description.toLowerCase()}
+                        </p>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground/60 italic">
+                          ↳ {repo.relevance.toLowerCase()}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </CardContent>
@@ -517,24 +509,21 @@ export function DossierScreen({ candidate: c, onBack }: Props) {
                     posts
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 px-5 pt-3">
-                  {c.blogPosts.map((post) => (
-                    <div
-                      key={post.title}
-                      className="border-b border-border pb-2.5 last:border-0 last:pb-0"
-                    >
-                      <a
-                        href="#"
-                        className="text-xs font-medium text-foreground hover:underline"
-                      >
-                        {post.title.toLowerCase()}
-                      </a>
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {post.date}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        &ldquo;{post.excerpt.toLowerCase()}&rdquo;
-                      </p>
+                <CardContent className="space-y-0 px-5 pt-3">
+                  {c.blogPosts.map((post, index) => (
+                    <div key={post.title}>
+                      {index > 0 && <Separator className="my-2.5" />}
+                      <div className="pb-0.5">
+                        <Button variant="link" asChild className="h-auto p-0 text-xs font-medium">
+                          <a href="#">{post.title.toLowerCase()}</a>
+                        </Button>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground">
+                          {post.date}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          &ldquo;{post.excerpt.toLowerCase()}&rdquo;
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </CardContent>
@@ -575,15 +564,24 @@ export function DossierScreen({ candidate: c, onBack }: Props) {
               </div>
               <div className="flex flex-wrap items-center gap-2 text-[8px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-[2.5px] w-4 rounded-full bg-foreground/60" />{" "}
+                  <Progress
+                    value={100}
+                    className="h-[2.5px] w-4 bg-transparent [&_[data-slot=progress-indicator]]:bg-foreground/60"
+                  />
                   strong
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-[1.5px] w-4 rounded-full bg-foreground/35" />{" "}
+                  <Progress
+                    value={100}
+                    className="h-[1.5px] w-4 bg-transparent [&_[data-slot=progress-indicator]]:bg-foreground/35"
+                  />
                   medium
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="inline-block h-px w-4 rounded-full bg-foreground/18" />{" "}
+                  <Progress
+                    value={100}
+                    className="h-px w-4 bg-transparent [&_[data-slot=progress-indicator]]:bg-foreground/18"
+                  />
                   weak
                 </span>
               </div>
