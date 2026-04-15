@@ -8,6 +8,10 @@
  * @module
  */
 
+import type * as candidates from "../candidates.js";
+import type * as http from "../http.js";
+import type * as searchAction from "../searchAction.js";
+import type * as searches from "../searches.js";
 import type * as status from "../status.js";
 
 import type {
@@ -17,6 +21,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  candidates: typeof candidates;
+  http: typeof http;
+  searchAction: typeof searchAction;
+  searches: typeof searches;
   status: typeof status;
 }>;
 
