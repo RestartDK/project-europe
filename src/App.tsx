@@ -1,33 +1,23 @@
-import { useQuery } from "convex/react"
-
-import { api } from "../convex/_generated/api"
+import { useState } from "react"
+import type { Id } from "../convex/_generated/dataModel"
+import { SearchInput } from "./components/SearchInput"
+import { CandidateList } from "./components/CandidateList"
 
 export function App() {
-  const status = useQuery(api.status.get)
+  const [currentSearchId, setCurrentSearchId] = useState<Id<"searches"> | null>(null)
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
-      <div className="flex w-full max-w-xl min-w-0 flex-col gap-4 rounded-2xl border bg-card p-6 text-sm shadow-sm">
-        <div className="space-y-2">
-          <h1 className="text-xl font-semibold">Convex is set up</h1>
-          <p className="text-muted-foreground">
-            This app is now wrapped in `ConvexProvider` and reading from a live
-            query at `api.status.get`.
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-muted/40 p-4 font-mono text-xs leading-6">
-          <div>Query result: {status?.message ?? "Loading..."}</div>
-          <div>Environment: {status?.environment ?? "loading"}</div>
-          <div>Client URL: {import.meta.env.VITE_CONVEX_URL}</div>
-          <div>Backend file: convex/status.ts</div>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Run `bunx convex dev` while developing so Convex can watch, deploy,
-          and regenerate types as you change functions.
+    <div className="mx-auto flex min-h-svh max-w-4xl flex-col gap-8 p-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold">Talent Search</h1>
+        <p className="text-sm text-muted-foreground">
+          Describe who you're looking for in plain English.
         </p>
       </div>
+
+      <SearchInput onSearchStart={setCurrentSearchId} />
+
+      {currentSearchId && <CandidateList searchId={currentSearchId} />}
     </div>
   )
 }
