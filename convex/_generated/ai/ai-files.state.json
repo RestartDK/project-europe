@@ -4,6 +4,7 @@
   "claudeMdHash": "bbf30bd25ceea0aefd279d62e1cb2b4c207fcb712b69adf26f3d02b296ffc7b2",
   "agentSkillsSha": "4de8fba05b0a506661116985649072777049f67b",
   "installedSkillNames": [
+    "components-guide",
     "convex-create-component",
     "convex-migration-helper",
     "convex-performance-audit",
