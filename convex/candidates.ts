@@ -9,7 +9,8 @@ export const createCandidate = internalMutation({
     currentCompany: v.optional(v.string()),
     linkedinUrl: v.optional(v.string()),
     location: v.optional(v.string()),
-    apolloId: v.optional(v.string()),
+    pdlId: v.optional(v.string()),
+    pdlScore: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("talentCandidates", {
@@ -19,7 +20,8 @@ export const createCandidate = internalMutation({
       currentCompany: args.currentCompany,
       linkedinUrl: args.linkedinUrl,
       location: args.location,
-      apolloId: args.apolloId,
+      pdlId: args.pdlId,
+      pdlScore: args.pdlScore,
       enriched: false,
     })
   },
