@@ -1,12 +1,9 @@
-import { useEffect, useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
 import type { FunctionReturnType } from "convex/server";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -16,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
 
@@ -27,8 +23,6 @@ type Props = {
   onSelectScore: (scoreId: Id<"candidateScores">) => void;
   results: ResultRow[];
 };
-
-const weightKeys = ["github", "blog", "network", "oss"] as const;
 
 const rowCn = cn(
   "cursor-pointer border-b border-border transition-colors last:border-b-0",
@@ -95,69 +89,6 @@ function MatchBar({ score }: { score: number }) {
 const MotionTableRow = motion.create(TableRow);
 
 export function ResultsScreen({ onSelectScore, results }: Props) {
-  const [weights, setWeights] = useState({
-    github: true,
-    blog: true,
-    network: true,
-    oss: true,
-  });
-  const [mobileWeightsOpen, setMobileWeightsOpen] = useState(false);
-  const mobileWeightsRef = useRef<HTMLDetailsElement>(null);
-
-  useEffect(() => {
-    if (!mobileWeightsOpen) return;
-
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target;
-      if (!(target instanceof Node)) return;
-      if (mobileWeightsOpen && !mobileWeightsRef.current?.contains(target)) {
-        setMobileWeightsOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => document.removeEventListener("pointerdown", onPointerDown, true);
-  }, [mobileWeightsOpen]);
-
-  const activeWeightValues = weightKeys.filter((k) => weights[k]);
-  const weightSummaryLabel =
-    activeWeightValues.length === weightKeys.length
-      ? "all on"
-      : `${activeWeightValues.length}/${weightKeys.length} on`;
-
-  const weightsToggleGroup = (layout: "panel" | "toolbar") => (
-    <ToggleGroup
-      type="multiple"
-      value={activeWeightValues}
-      onValueChange={(vals) => {
-        setWeights({
-          github: vals.includes("github"),
-          blog: vals.includes("blog"),
-          network: vals.includes("network"),
-          oss: vals.includes("oss"),
-        });
-      }}
-      variant="outline"
-      size="sm"
-      spacing={4}
-      className={cn(
-        "flex justify-start gap-1.5",
-        layout === "panel" && "w-full min-w-0 max-w-full flex-wrap",
-        layout === "toolbar" && "w-fit shrink-0 flex-nowrap",
-      )}
-    >
-      {weightKeys.map((key) => (
-        <ToggleGroupItem
-          key={key}
-          value={key}
-          className="rounded-full px-2.5 text-[10px] font-medium capitalize data-[state=on]:bg-foreground/10 data-[state=on]:text-foreground"
-        >
-          {key}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  );
-
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-4 pb-6 pt-16 sm:px-6 sm:pb-8 sm:pt-20">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -167,36 +98,6 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
             {results.length} candidates
           </p>
         </header>
-
-        <div className="mb-4 overflow-visible md:hidden">
-          <details
-            ref={mobileWeightsRef}
-            open={mobileWeightsOpen}
-            onToggle={(e) => setMobileWeightsOpen(e.currentTarget.open)}
-            className="group relative z-10 rounded-2xl border border-border bg-card ring-1 ring-border/60 open:z-20"
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 px-2.5 py-2.5 text-left outline-none select-none [&::-webkit-details-marker]:hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background">
-              <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                weights
-              </span>
-              <span className="min-w-0 flex-1 truncate text-right text-[11px] font-medium capitalize text-foreground">
-                {weightSummaryLabel}
-              </span>
-              <ChevronDown
-                aria-hidden
-                className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
-              />
-            </summary>
-            <div className="absolute top-full right-0 left-0 z-50 mt-1 rounded-xl border border-border bg-card p-2 shadow-lg ring-1 ring-border/60">
-              {weightsToggleGroup("panel")}
-            </div>
-          </details>
-        </div>
-
-        <div className="mb-4 hidden w-full min-w-0 items-center gap-2 md:flex md:flex-nowrap">
-          <Label className="shrink-0 text-[10px] text-muted-foreground">weights</Label>
-          {weightsToggleGroup("toolbar")}
-        </div>
 
         <Card className="overflow-hidden rounded-2xl py-0 ring-1 ring-border">
           <Table className="min-w-max">
