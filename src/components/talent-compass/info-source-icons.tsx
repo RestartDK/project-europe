@@ -96,7 +96,7 @@ export function InfoSourceIcons({
   return (
     <div
       className={cn(
-        "flex flex-nowrap items-center justify-end pr-0.5",
+        "flex flex-nowrap items-center justify-start pl-0.5",
         className,
       )}
     >

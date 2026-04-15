@@ -116,7 +116,7 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
                 <TableHead className={headCn}>role</TableHead>
                 <TableHead className={headCn}>company</TableHead>
                 <TableHead className={headCn}>why</TableHead>
-                <TableHead className={cn(headCn, "text-right")}>sources</TableHead>
+                <TableHead className={headCn}>sources</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -174,7 +174,7 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
                     </p>
                   </TableCell>
                   <TableCell className="px-4 py-2.5">
-                    <InfoSourceIcons sources={r.infoSources} className="justify-end" />
+                    <InfoSourceIcons sources={r.infoSources} />
                   </TableCell>
                 </MotionTableRow>
               ))}
