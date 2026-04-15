@@ -294,7 +294,7 @@ http.route({
 http.route({
   path: "/import-pool",
   method: "DELETE",
-  handler: httpAction(async (ctx, _req) => {
+  handler: httpAction(async (ctx) => {
     const deleted = await ctx.runMutation(internal.candidatePool.clearPool)
     return new Response(JSON.stringify({ ok: true, deleted }), { status: 200, headers: { "Content-Type": "application/json" } })
   }),
