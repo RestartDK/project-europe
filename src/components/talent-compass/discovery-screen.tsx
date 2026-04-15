@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { motion, useSpring, useTransform } from "framer-motion"
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react"
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -36,43 +36,29 @@ function statusCopy(status: RankingStatus) {
   }
 }
 
-function statusProgress(status: RankingStatus) {
+/** End-of-phase target on the full 0–100% scale (monotonic as `status` advances). */
+function milestoneFor(status: RankingStatus): number {
   switch (status) {
     case "ready_for_clay":
-      return 18
+      return 22
     case "clay_queued":
-      return 35
+      return 42
     case "importing_candidates":
-      return 62
+      return 64
     case "ranking":
       return 88
     case "ranked":
-      return 100
     case "error":
       return 100
   }
 }
 
-/**
- * Simulated crawl: stay at or above `floor`, ease toward `cap` over wall-clock time
- * (not per-frame random jumps) so pacing feels deliberate on the way to 100%.
- */
-function phaseBounds(status: RankingStatus): { floor: number; cap: number } | null {
-  switch (status) {
-    case "ready_for_clay":
-      return { floor: 18, cap: 48 }
-    case "clay_queued":
-      return { floor: 35, cap: 56 }
-    case "importing_candidates":
-      return { floor: 62, cap: 82 }
-    case "ranking":
-      return { floor: 88, cap: 96 }
-    default:
-      return null
-  }
+function initialRawForStatus(status: RankingStatus): number {
+  if (status === "ranked" || status === "error") return 100
+  return 0
 }
 
-/** Rough wall time to traverse start→cap for each phase (slow = more believable). */
+/** Rough wall time to traverse start→milestone for each phase (slow = more believable). */
 function phaseDurationMs(status: RankingStatus): number {
   switch (status) {
     case "ready_for_clay":
@@ -96,33 +82,28 @@ function easeInOutCubic(t: number): number {
 
 function useRetrievalProgress(status: RankingStatus) {
   const terminal = status === "ranked" || status === "error"
-  const [raw, setRaw] = useState(() => statusProgress(status))
+  /** MotionValue so rAF updates are not dropped by React state bailouts; `useSpring` only follows other MotionValues. */
+  const progress = useMotionValue(initialRawForStatus(status))
+  const spring = useSpring(progress, { stiffness: 48, damping: 22, mass: 1.1 })
+
   const phaseAnchorRef = useRef<{ startVal: number; t0: number }>({
-    startVal: statusProgress(status),
+    startVal: initialRawForStatus(status),
     t0: performance.now(),
   })
   const prevStatusRef = useRef<RankingStatus | null>(null)
 
   useLayoutEffect(() => {
-    const p = statusProgress(status)
     if (terminal) {
-      setRaw((prev) => (prev < p ? Math.max(prev, p - 8) : prev))
+      prevStatusRef.current = status
       return
     }
-    const b = phaseBounds(status)
-    if (!b) return
-
     const statusChanged = prevStatusRef.current !== status
     prevStatusRef.current = status
 
-    setRaw((prev) => {
-      const next = Math.max(b.floor, prev)
-      if (statusChanged) {
-        phaseAnchorRef.current = { startVal: next, t0: performance.now() }
-      }
-      return next
-    })
-  }, [status, terminal])
+    if (statusChanged) {
+      phaseAnchorRef.current = { startVal: progress.get(), t0: performance.now() }
+    }
+  }, [status, terminal, progress])
 
   useEffect(() => {
     let cancelled = false
@@ -131,11 +112,13 @@ function useRetrievalProgress(status: RankingStatus) {
       const goal = 100
       const tick = () => {
         if (cancelled) return
-        setRaw((prev) => {
-          const delta = goal - prev
-          if (delta < 0.04) return goal
-          return prev + delta * (prev > 94 ? 0.045 : 0.028)
-        })
+        const prev = progress.get()
+        const delta = goal - prev
+        if (delta < 0.04) {
+          progress.set(goal)
+          return
+        }
+        progress.set(prev + delta * (prev > 94 ? 0.055 : 0.035))
         requestAnimationFrame(tick)
       }
       const id = requestAnimationFrame(tick)
@@ -145,7 +128,7 @@ function useRetrievalProgress(status: RankingStatus) {
       }
     }
 
-    const b = phaseBounds(status)!
+    const goal = milestoneFor(status)
     const tick = () => {
       if (cancelled) return
       const { startVal, t0 } = phaseAnchorRef.current
@@ -153,14 +136,9 @@ function useRetrievalProgress(status: RankingStatus) {
       const dur = phaseDurationMs(status)
       const u = dur > 0 ? Math.min(1, elapsed / dur) : 1
       const eased = easeInOutCubic(u)
-      let next = startVal + (b.cap - startVal) * eased
-      next += Math.sin(elapsed / 2_200) * 0.12
-      next += (Math.random() - 0.5) * 0.04
-      if (u >= 0.985) {
-        next = b.cap - 0.22 + Math.sin(elapsed / 580) * 0.08
-      }
-      next = Math.min(b.cap, Math.max(b.floor, next))
-      setRaw((prev) => (Math.abs(next - prev) < 0.015 ? prev : next))
+      const next = startVal + (goal - startVal) * eased
+      const prev = progress.get()
+      progress.set(Math.min(goal, Math.max(prev, next)))
       requestAnimationFrame(tick)
     }
     const id = requestAnimationFrame(tick)
@@ -168,12 +146,7 @@ function useRetrievalProgress(status: RankingStatus) {
       cancelled = true
       cancelAnimationFrame(id)
     }
-  }, [status, terminal])
-
-  const spring = useSpring(raw, { stiffness: 72, damping: 26, mass: 1.05 })
-  useEffect(() => {
-    spring.set(raw)
-  }, [raw, spring])
+  }, [status, terminal, progress])
 
   return { spring, terminal }
 }
