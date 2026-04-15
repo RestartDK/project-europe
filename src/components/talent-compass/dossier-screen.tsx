@@ -20,7 +20,7 @@ import { api } from "../../../convex/_generated/api";
 type Dossier = FunctionReturnType<typeof api.ranking.getCandidateDossier>;
 
 type Props = {
-  dossier: Dossier;
+  dossier: Dossier | null | undefined;
   onBack: () => void;
   onFeedback: (disposition: "thumbs_up" | "thumbs_down" | "promote" | "hide") => void;
 };
