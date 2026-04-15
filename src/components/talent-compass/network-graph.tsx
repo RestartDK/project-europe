@@ -1,19 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 
-import { Badge } from "@/components/ui/badge";
-
 import type { NetworkConnection } from "@/types/network";
-
-const channelIcon: Record<NetworkConnection["channels"][number]["type"], string> = {
-  github: "⌘",
-  twitter: "𝕏",
-  slack: "#",
-  conference: "◉",
-  company: "◆",
-  university: "▲",
-  oss: "⚡",
-};
 
 const strengthStroke: Record<string, { width: number; opacity: number }> = {
   strong: { width: 2.5, opacity: 0.6 },
@@ -101,27 +89,6 @@ export function NetworkGraph({ candidate, connections }: Props) {
                 animate={{ pathLength: 1 }}
                 transition={{ duration: 0.6, delay: 0.15 + i * 0.1 }}
               />
-              {conn.channels.length > 0 && (
-                <foreignObject
-                  x={cp.x + 30}
-                  y={cp.y - 10}
-                  width={100}
-                  height={20}
-                  className="pointer-events-none overflow-visible"
-                >
-                  <div className="flex gap-0.5">
-                    {conn.channels.slice(0, 2).map((ch) => (
-                      <Badge
-                        key={ch.type}
-                        variant="secondary"
-                        className="h-4 rounded px-1 py-0 text-[7px] font-normal text-muted-foreground"
-                      >
-                        {channelIcon[ch.type]}
-                      </Badge>
-                    ))}
-                  </div>
-                </foreignObject>
-              )}
             </g>
           );
         })}

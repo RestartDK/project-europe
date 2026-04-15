@@ -1,4 +1,4 @@
-import { useAction, useMutation, useQuery } from "convex/react"
+import { useAction, useQuery } from "convex/react"
 import { useCallback, useMemo, useState } from "react"
 
 import { ContextScreen } from "@/components/talent-compass/context-screen"
@@ -22,7 +22,6 @@ export function App() {
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const extractSearchCriteria = useAction(api.intake.extractSearchCriteria)
-  const submitFeedback = useMutation(api.ranking.submitFeedback)
 
   const searchResults = useQuery(
     api.ranking.getSearchResults,
@@ -87,18 +86,6 @@ export function App() {
     setScreen("context")
     setContextStep(2)
   }, [])
-
-  const onFeedback = useCallback(
-    async (disposition: "thumbs_up" | "thumbs_down" | "promote" | "hide") => {
-      if (!activeRequestId || !dossier) return
-      await submitFeedback({
-        requestId: activeRequestId,
-        scoreId: dossier.scoreId,
-        disposition,
-      })
-    },
-    [activeRequestId, dossier, submitFeedback],
-  )
 
   const backFromDiscoveryWithError = useCallback(() => {
     setSubmitError(searchResults?.errorMessage ?? submitError)
@@ -174,7 +161,7 @@ export function App() {
         />
       )}
       {effectiveScreen === "dossier" && (
-        <DossierScreen dossier={dossier} onFeedback={onFeedback} />
+        <DossierScreen dossier={dossier} />
       )}
       </main>
     </div>
