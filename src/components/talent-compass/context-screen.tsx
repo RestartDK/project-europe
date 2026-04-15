@@ -15,14 +15,6 @@ import { cn } from "@/lib/utils"
 const flowPrimaryButtonClassName =
   "h-11 w-full min-w-0 rounded-2xl px-5 text-sm font-semibold shadow-sm ring-1 ring-foreground/10 transition-[box-shadow,transform] hover:shadow-md hover:ring-foreground/15 active:translate-y-px"
 
-const sharpeningQuestions = [
-  "remote-friendly?",
-  "senior+ only?",
-  "open to relocation?",
-  "active oss preferred?",
-  "startup exp matters?",
-]
-
 type Props = {
   step: 1 | 2
   onStepChange: (step: 1 | 2) => void
@@ -30,8 +22,6 @@ type Props = {
   onCompanyChange: (value: string) => void
   lookingFor: string
   onLookingForChange: (value: string) => void
-  selectedChips: Set<string>
-  onToggleChip: (q: string) => void
   onStartDiscovery: () => void
   errorMessage?: string | null
 }
@@ -43,13 +33,11 @@ export function ContextScreen({
   onCompanyChange,
   lookingFor,
   onLookingForChange,
-  selectedChips,
-  onToggleChip,
   onStartDiscovery,
   errorMessage,
 }: Props) {
   return (
-    <div className="flex min-h-screen items-center justify-center px-5 sm:px-10 md:px-12 lg:px-16">
+    <div className="flex min-h-0 flex-1 items-center justify-center px-5 sm:px-10 md:px-12 lg:px-16">
       <motion.div
         className="w-full max-w-xl sm:max-w-2xl"
         initial={{ opacity: 0, y: 10 }}
@@ -123,26 +111,6 @@ export function ContextScreen({
                 value={lookingFor}
                 onChange={(e) => onLookingForChange(e.target.value)}
               />
-
-              <div>
-                <CardDescription className="mb-2 text-[10px] font-medium">
-                  sharpen
-                </CardDescription>
-                <div className="flex flex-wrap gap-1.5">
-                  {sharpeningQuestions.map((q) => (
-                    <Button
-                      key={q}
-                      type="button"
-                      size="sm"
-                      variant={selectedChips.has(q) ? "default" : "secondary"}
-                      className="h-8 rounded-full px-3 text-[11px] font-medium"
-                      onClick={() => onToggleChip(q)}
-                    >
-                      {q}
-                    </Button>
-                  ))}
-                </div>
-              </div>
 
               <Button
                 type="button"

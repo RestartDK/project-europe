@@ -58,7 +58,7 @@ export function DiscoveryScreen({ status, errorMessage, rankingNotes }: Props) {
   const target = useMemo(() => statusProgress(status), [status])
 
   return (
-    <div className="flex min-h-svh flex-col px-4 pb-8 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col px-4 pb-8 sm:px-6">
       <div className="flex flex-1 flex-col items-center justify-center">
         <Card className="w-full max-w-sm border-none bg-transparent py-0 shadow-none ring-0">
           <CardContent className="px-0">

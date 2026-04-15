@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-import { computeSignalColumns } from "./lib/signals";
+import { deriveInfoSources } from "./lib/infoSources";
 
 const requestStatusValidator = v.union(
   v.literal("ready_for_clay"),
@@ -76,10 +76,16 @@ const resultRowValidator = v.object({
   stacks: v.array(v.string()),
   profileUrl: v.optional(v.string()),
   companyLogoUrl: v.optional(v.string()),
-  githubSignal: v.number(),
-  blogSignal: v.number(),
-  networkProximity: v.number(),
-  ossContributions: v.number(),
+  infoSources: v.array(
+    v.union(
+      v.literal("linkedin"),
+      v.literal("github"),
+      v.literal("x"),
+      v.literal("website"),
+      v.literal("reddit"),
+      v.literal("youtube"),
+    ),
+  ),
 });
 
 export const getSearchResults = query({
@@ -132,10 +138,7 @@ export const getSearchResults = query({
         .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
         .take(20);
 
-      const signalCols = computeSignalColumns(
-        evidenceDocs.map((e) => ({ kind: e.kind, strength: e.strength })),
-        score.factorBreakdown,
-      );
+      const infoSources = deriveInfoSources(candidate, evidenceDocs);
 
       results.push({
         scoreId: score._id,
@@ -153,10 +156,7 @@ export const getSearchResults = query({
         stacks: candidate.stacks,
         profileUrl: candidate.profileUrl,
         companyLogoUrl: candidate.companyLogoUrl,
-        githubSignal: signalCols.githubSignal,
-        blogSignal: signalCols.blogSignal,
-        networkProximity: signalCols.networkProximity,
-        ossContributions: signalCols.ossContributions,
+        infoSources,
       });
     }
 

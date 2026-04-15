@@ -42,7 +42,7 @@ function BreakdownBar({ label, score }: { label: string; score: number }) {
 export function DossierScreen({ dossier, onFeedback }: Props) {
   if (dossier === undefined) {
     return (
-      <div className="mx-auto min-h-screen max-w-5xl px-6 py-8">
+      <div className="mx-auto min-h-0 w-full max-w-5xl flex-1 px-6 py-8">
         <div className="rounded-2xl border border-border bg-card p-6 text-xs text-muted-foreground">
           loading dossier…
         </div>
@@ -52,7 +52,7 @@ export function DossierScreen({ dossier, onFeedback }: Props) {
 
   if (dossier === null) {
     return (
-      <div className="mx-auto min-h-screen max-w-5xl px-6 py-8">
+      <div className="mx-auto min-h-0 w-full max-w-5xl flex-1 px-6 py-8">
         <div className="rounded-2xl border border-border bg-card p-6 text-xs text-muted-foreground">
           dossier not available.
         </div>
@@ -71,7 +71,7 @@ export function DossierScreen({ dossier, onFeedback }: Props) {
   const networkOnlyEvidence = dossier.evidence.filter((e) => e.kind === "network");
 
   return (
-    <div className="mx-auto min-h-screen max-w-5xl px-6 py-8">
+    <div className="mx-auto min-h-0 w-full max-w-5xl flex-1 px-6 py-8">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <Card className="rounded-2xl py-5">

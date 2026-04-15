@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { api } from "../../../convex/_generated/api";
+import { InfoSourceIcons } from "./info-source-icons";
 
 type SearchResults = FunctionReturnType<typeof api.ranking.getSearchResults>;
 type ResultRow = NonNullable<SearchResults>["results"][number];
@@ -32,38 +33,44 @@ const rowCn = cn(
 const headCn =
   "h-auto px-4 py-2.5 text-left text-[10px] font-medium text-muted-foreground";
 
-const headCnCenter =
-  "h-auto px-3 py-2.5 text-center text-[10px] font-medium text-muted-foreground";
+const rankColWidth = "w-10 min-w-10";
+
+/** Opaque 1px “border” for sticky columns — avoids scroll bleed through translucent `border-border` (esp. dark). */
+const stickyHeadEdge =
+  "shadow-[1px_0_0_0_color-mix(in_oklch,var(--foreground),var(--secondary)_88%)]";
+const stickyBodyEdge =
+  "shadow-[1px_0_0_0_color-mix(in_oklch,var(--foreground),var(--background)_88%)]";
+const stickyBodyEdgeHover =
+  "group-hover:shadow-[1px_0_0_0_color-mix(in_oklch,var(--foreground),var(--secondary)_88%)]";
+
+const stickyRankHead = cn(
+  headCn,
+  rankColWidth,
+  "sticky left-0 z-20 bg-secondary text-center tabular-nums",
+  stickyHeadEdge,
+);
+const stickyRankCell = cn(
+  "px-2 py-2.5 text-center",
+  rankColWidth,
+  "sticky left-0 z-20 bg-background text-xs font-medium tabular-nums text-muted-foreground group-hover:bg-secondary",
+  stickyBodyEdge,
+  stickyBodyEdgeHover,
+);
 
 const stickyCandidateHead = cn(
   headCn,
-  "sticky left-0 z-30 border-r border-border bg-secondary/40",
+  "sticky left-10 z-30 bg-secondary",
+  stickyHeadEdge,
 );
 const stickyCandidateCell = cn(
   "px-4 py-2.5",
-  "sticky left-0 z-10 border-r border-border bg-card group-hover:bg-secondary/40",
+  "sticky left-10 z-30 bg-background group-hover:bg-secondary",
+  stickyBodyEdge,
+  stickyBodyEdgeHover,
 );
 
 function avatarUrl(seed: string) {
   return `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
-}
-
-function SignalCell({ value }: { value: number }) {
-  const indicatorClass =
-    value >= 85
-      ? "[&_[data-slot=progress-indicator]]:bg-success"
-      : value >= 65
-        ? "[&_[data-slot=progress-indicator]]:bg-foreground/40"
-        : "[&_[data-slot=progress-indicator]]:bg-muted-foreground/30";
-  return (
-    <div className="flex flex-col items-center justify-center gap-1">
-      <Progress
-        value={value}
-        className={cn("h-1 w-8 bg-secondary", indicatorClass)}
-      />
-      <span className="text-[11px] text-muted-foreground tabular-nums">{value}</span>
-    </div>
-  );
 }
 
 function MatchBar({ score }: { score: number }) {
@@ -90,7 +97,7 @@ const MotionTableRow = motion.create(TableRow);
 
 export function ResultsScreen({ onSelectScore, results }: Props) {
   return (
-    <div className="mx-auto min-h-screen max-w-6xl px-4 pb-6 pt-16 sm:px-6 sm:pb-8 sm:pt-20">
+    <div className="mx-auto min-h-0 w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <header className="mb-5 text-left">
           <h2 className="font-heading text-xl font-bold text-foreground">discovery results</h2>
@@ -100,17 +107,16 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
         </header>
 
         <Card className="overflow-hidden rounded-2xl py-0 ring-1 ring-border">
-          <Table className="min-w-max">
+          <Table className="min-w-max border-separate border-spacing-0">
             <TableHeader>
-              <TableRow className="border-b border-border bg-secondary/40 hover:bg-secondary/40">
+              <TableRow className="border-b border-border bg-secondary hover:bg-secondary">
+                <TableHead className={stickyRankHead}>#</TableHead>
                 <TableHead className={stickyCandidateHead}>candidate</TableHead>
+                <TableHead className={headCn}>match</TableHead>
                 <TableHead className={headCn}>role</TableHead>
                 <TableHead className={headCn}>company</TableHead>
-                <TableHead className={headCn}>match</TableHead>
-                <TableHead className={headCnCenter}>gh</TableHead>
-                <TableHead className={headCnCenter}>blog</TableHead>
-                <TableHead className={headCnCenter}>net</TableHead>
-                <TableHead className={headCnCenter}>oss</TableHead>
+                <TableHead className={headCn}>why</TableHead>
+                <TableHead className={cn(headCn, "text-right")}>sources</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,6 +129,7 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
                   onClick={() => onSelectScore(r.scoreId)}
                   className={cn(rowCn, "group")}
                 >
+                  <TableCell className={stickyRankCell}>{i + 1}</TableCell>
                   <TableCell className={stickyCandidateCell}>
                     <div className="flex items-center gap-2.5">
                       <Avatar className="size-6 rounded-full">
@@ -133,6 +140,9 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
                         {r.fullName.toLowerCase()}
                       </span>
                     </div>
+                  </TableCell>
+                  <TableCell className="px-4 py-2.5">
+                    <MatchBar score={Math.round(r.finalScore)} />
                   </TableCell>
                   <TableCell className="px-4 py-2.5">
                     <div className="text-xs text-foreground">{r.headline.toLowerCase()}</div>
@@ -155,20 +165,16 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
                       </span>
                     </div>
                   </TableCell>
+                  <TableCell className="max-w-[min(280px,28vw)] px-4 py-2.5">
+                    <p
+                      className="truncate text-[11px] leading-snug text-foreground lowercase"
+                      title={r.summaryWhy}
+                    >
+                      {r.summaryWhy.toLowerCase()}
+                    </p>
+                  </TableCell>
                   <TableCell className="px-4 py-2.5">
-                    <MatchBar score={Math.round(r.finalScore)} />
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 text-center">
-                    <SignalCell value={r.githubSignal} />
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 text-center">
-                    <SignalCell value={r.blogSignal} />
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 text-center">
-                    <SignalCell value={r.networkProximity} />
-                  </TableCell>
-                  <TableCell className="px-3 py-2.5 text-center">
-                    <SignalCell value={r.ossContributions} />
+                    <InfoSourceIcons sources={r.infoSources} className="justify-end" />
                   </TableCell>
                 </MotionTableRow>
               ))}
