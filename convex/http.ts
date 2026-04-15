@@ -44,6 +44,12 @@ http.route({
       );
     }
 
+    console.log("[http:/api/rank] request", {
+      promptLength: prompt.length,
+      promptPreview: prompt.slice(0, 300),
+      hasCompanyContext: Boolean(companyContext),
+    });
+
     try {
       const extracted = await ctx.runAction(api.intake.extractSearchCriteria, {
         prompt,
@@ -55,6 +61,9 @@ http.route({
       });
 
       if (!search) {
+        console.log("[http:/api/rank] no search results after ranking", {
+          requestId: extracted.requestId,
+        });
         return Response.json(
           { error: "Ranking completed, but no search results were found." },
           { status: 500 },
@@ -69,7 +78,7 @@ http.route({
         ),
       );
 
-      return Response.json({
+      const payload = {
         requestId: extracted.requestId,
         threadId: extracted.threadId,
         criteria: JSON.parse(extracted.criteriaJson),
@@ -78,8 +87,26 @@ http.route({
         rankingVersion: search.rankingVersion,
         results: search.results,
         dossiers: dossiers.filter(Boolean),
+      };
+
+      console.log("[http:/api/rank] response", {
+        requestId: payload.requestId,
+        status: payload.status,
+        resultCount: payload.results.length,
+        dossierCount: payload.dossiers.length,
+        rankingVersion: payload.rankingVersion,
+        topPreview: payload.results.slice(0, 5).map((r) => ({
+          rank: r.rank,
+          name: r.fullName,
+          score: Math.round(r.finalScore),
+        })),
       });
+
+      return Response.json(payload);
     } catch (error) {
+      console.log("[http:/api/rank] error", {
+        message: error instanceof Error ? error.message : String(error),
+      });
       return Response.json(
         {
           error:

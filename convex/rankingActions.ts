@@ -205,6 +205,12 @@ export const seedStubCandidates = internalMutation({
       }
     }
 
+    console.log("[ranking] stub fixture inserted into DB", {
+      requestId: args.requestId,
+      candidateCount: candidateStubs.length,
+      slugs: candidateStubs.map((c) => c.slug),
+    });
+
     return { candidateCount: candidateStubs.length };
   },
 });
@@ -523,6 +529,14 @@ export const runRanking = internalAction({
       { requestId: args.requestId },
     );
 
+    console.log("[ranking] runRanking start", {
+      requestId: args.requestId,
+      roleTitle: criteria.roleTitle,
+      domain: criteria.domain,
+      candidateCount: candidates.length,
+      rawPromptPreview: requestContext.request.rawPrompt.slice(0, 200),
+    });
+
     const { threadId } = await rankingAgent.createThread(ctx, {});
     const rankingRunId: Id<"rankingRuns"> = await ctx.runMutation(
       internal.rankingActions.createRankingRun,
@@ -544,6 +558,16 @@ export const runRanking = internalAction({
       criteria,
       candidates.map(toCandidateStub),
     );
+
+    console.log("[ranking] deterministic baseline order", {
+      requestId: args.requestId,
+      rankingRunId,
+      order: deterministicRanking.slice(0, 6).map((r, i) => ({
+        rank: i + 1,
+        slug: r.slug,
+        baseScore: Math.round(r.baseScore * 100) / 100,
+      })),
+    });
 
     let persistedResults = deterministicRanking;
     let rankingStatus: "completed" | "fallback" | "error" = "fallback";
@@ -568,11 +592,24 @@ export const runRanking = internalAction({
       } else {
         notes = "LLM output was incomplete, so deterministic fallback was used.";
       }
+      console.log("[ranking] Convex Agent rerank result", {
+        requestId: args.requestId,
+        rankingRunId,
+        rankingStatus,
+        notesPreview: notes.slice(0, 300),
+        mergedCount: mergedResults.length,
+        expectedCount: deterministicRanking.length,
+      });
     } catch (error) {
       notes =
         error instanceof Error
           ? `Fallback ranking used because Anthropic rerank failed: ${error.message}`
           : "Fallback ranking used because Anthropic rerank failed.";
+      console.log("[ranking] Convex Agent rerank threw; using deterministic fallback", {
+        requestId: args.requestId,
+        rankingRunId,
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
 
     await ctx.runMutation(internal.rankingActions.saveRankingResults, {
@@ -591,6 +628,18 @@ export const runRanking = internalAction({
       requestId: args.requestId,
       status: "ranked",
       latestRankingRunId: rankingRunId,
+    });
+
+    console.log("[ranking] runRanking return", {
+      requestId: args.requestId,
+      rankingRunId,
+      rankingStatus,
+      persistedCount: persistedResults.length,
+      finalOrder: persistedResults.map((r, i) => ({
+        rank: i + 1,
+        slug: r.slug,
+        finalScore: Math.round(r.finalScore * 100) / 100,
+      })),
     });
 
     return {

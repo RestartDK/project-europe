@@ -72,10 +72,18 @@ export const extractSearchCriteria = action({
       .filter((x): x is string => Boolean(x))
       .join("\n\n");
 
+    console.log("[intake] first prompt for validation", {
+      threadId,
+      promptLength: prompt.length,
+      promptPreview: prompt.slice(0, 500),
+      hasCompanyContext: Boolean(args.companyContext?.trim()),
+    });
+
     let criteria: SearchCriteria = extractCriteriaFallback(
       args.prompt,
       args.companyContext,
     );
+    let criteriaSource: "llm" | "fallback" = "fallback";
 
     try {
       const result = await searchIntakeAgent.generateObject(
@@ -89,8 +97,14 @@ export const extractSearchCriteria = action({
       );
 
       criteria = result.object;
-    } catch {
+      criteriaSource = "llm";
+    } catch (error) {
       criteria = extractCriteriaFallback(args.prompt, args.companyContext);
+      criteriaSource = "fallback";
+      console.log("[intake] LLM criteria extraction failed, using fallback", {
+        threadId,
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
 
     const criteriaJson = JSON.stringify(criteria, null, 2);
@@ -104,6 +118,14 @@ export const extractSearchCriteria = action({
     });
 
     await ctx.runAction(internal.intake.enqueueClayStub, { requestId });
+
+    console.log("[intake] search request saved, enqueueing Clay stub pipeline", {
+      requestId,
+      threadId,
+      criteriaSource,
+      roleTitle: criteria.roleTitle,
+      stackCount: criteria.stack.length,
+    });
 
     return { requestId, criteriaJson, threadId };
   },

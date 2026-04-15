@@ -9,6 +9,8 @@ export const enqueueStub = internalAction({
     ctx,
     args,
   ): Promise<{ status: "ranked"; candidateCount: number }> => {
+    console.log("[clay:stub] start import + ranking", { requestId: args.requestId });
+
     await ctx.runMutation(internal.rankingActions.setSearchRequestStatus, {
       requestId: args.requestId,
       status: "importing_candidates",
@@ -21,13 +23,25 @@ export const enqueueStub = internalAction({
       },
     );
 
+    console.log("[clay:stub] seeded candidates from fixture", {
+      requestId: args.requestId,
+      candidateCount: seeded.candidateCount,
+    });
+
     await ctx.runMutation(internal.rankingActions.setSearchRequestStatus, {
       requestId: args.requestId,
       status: "clay_queued",
     });
 
-    await ctx.runAction(internal.rankingActions.runRanking, {
+    const ranking = await ctx.runAction(internal.rankingActions.runRanking, {
       requestId: args.requestId,
+    });
+
+    console.log("[clay:stub] ranking finished", {
+      requestId: args.requestId,
+      rankingRunId: ranking.rankingRunId,
+      rankingStatus: ranking.status,
+      candidateCount: seeded.candidateCount,
     });
 
     return { status: "ranked", candidateCount: seeded.candidateCount };
