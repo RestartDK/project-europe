@@ -1,6 +1,37 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const connectionChannelValidator = v.union(
+  v.literal("github"),
+  v.literal("twitter"),
+  v.literal("slack"),
+  v.literal("conference"),
+  v.literal("company"),
+  v.literal("university"),
+  v.literal("oss"),
+);
+
+const networkConnectionValidator = v.object({
+  id: v.string(),
+  name: v.string(),
+  avatar: v.string(),
+  role: v.string(),
+  channels: v.array(
+    v.object({
+      type: connectionChannelValidator,
+      detail: v.string(),
+    }),
+  ),
+  strength: v.union(
+    v.literal("strong"),
+    v.literal("medium"),
+    v.literal("weak"),
+  ),
+  lastInteraction: v.string(),
+  sharedProjects: v.number(),
+  relationship: v.string(),
+});
+
 export default defineSchema({
   searchRequests: defineTable({
     threadId: v.string(),
@@ -41,6 +72,11 @@ export default defineSchema({
     roleKeywords: v.array(v.string()),
     signalConfidence: v.number(),
     reachabilityScore: v.number(),
+    networkConnections: v.optional(v.array(networkConnectionValidator)),
+    companyLogoUrl: v.optional(v.string()),
+    socialGithub: v.optional(v.string()),
+    socialBlog: v.optional(v.string()),
+    socialTwitter: v.optional(v.string()),
   })
     .index("by_requestId", ["requestId"])
     .index("by_requestId_and_slug", ["requestId", "slug"]),

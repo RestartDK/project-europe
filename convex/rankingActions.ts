@@ -187,6 +187,11 @@ export const seedStubCandidates = internalMutation({
         roleKeywords: candidate.roleKeywords,
         signalConfidence: candidate.signalConfidence,
         reachabilityScore: candidate.reachabilityScore,
+        networkConnections: candidate.networkConnections,
+        companyLogoUrl: candidate.companyLogoUrl,
+        socialGithub: candidate.socialGithub,
+        socialBlog: candidate.socialBlog,
+        socialTwitter: candidate.socialTwitter,
       });
 
       for (const evidence of candidate.evidence) {

@@ -28,6 +28,28 @@ export type CandidateEvidenceStub = {
   tags: string[];
 };
 
+export type NetworkConnectionStub = {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  channels: Array<{
+    type:
+      | "github"
+      | "twitter"
+      | "slack"
+      | "conference"
+      | "company"
+      | "university"
+      | "oss";
+    detail: string;
+  }>;
+  strength: "strong" | "medium" | "weak";
+  lastInteraction: string;
+  sharedProjects: number;
+  relationship: string;
+};
+
 export type CandidateStub = {
   slug: string;
   fullName: string;
@@ -46,6 +68,11 @@ export type CandidateStub = {
   signalConfidence: number;
   reachabilityScore: number;
   evidence: CandidateEvidenceStub[];
+  networkConnections?: NetworkConnectionStub[];
+  companyLogoUrl?: string;
+  socialGithub?: string;
+  socialBlog?: string;
+  socialTwitter?: string;
 };
 
 export type FactorBreakdown = {

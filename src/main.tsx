@@ -6,11 +6,11 @@ import "./index.css"
 import App from "./App.tsx"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL
+const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined
 
 if (!convexUrl) {
   throw new Error(
-    "Missing VITE_CONVEX_URL. Run `bunx convex dev` to configure Convex."
+    "Missing VITE_CONVEX_URL. Run `bunx convex dev` to configure Convex.",
   )
 }
 
@@ -23,5 +23,5 @@ createRoot(document.getElementById("root")!).render(
         <App />
       </ThemeProvider>
     </ConvexProvider>
-  </StrictMode>
+  </StrictMode>,
 )

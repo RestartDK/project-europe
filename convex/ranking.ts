@@ -1,6 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+import { computeSignalColumns } from "./lib/signals";
+
 const requestStatusValidator = v.union(
   v.literal("ready_for_clay"),
   v.literal("clay_queued"),
@@ -27,6 +29,37 @@ const factorBreakdownValidator = v.object({
   reachabilityBonus: v.number(),
 });
 
+const connectionChannelValidator = v.union(
+  v.literal("github"),
+  v.literal("twitter"),
+  v.literal("slack"),
+  v.literal("conference"),
+  v.literal("company"),
+  v.literal("university"),
+  v.literal("oss"),
+);
+
+const networkConnectionReturnValidator = v.object({
+  id: v.string(),
+  name: v.string(),
+  avatar: v.string(),
+  role: v.string(),
+  channels: v.array(
+    v.object({
+      type: connectionChannelValidator,
+      detail: v.string(),
+    }),
+  ),
+  strength: v.union(
+    v.literal("strong"),
+    v.literal("medium"),
+    v.literal("weak"),
+  ),
+  lastInteraction: v.string(),
+  sharedProjects: v.number(),
+  relationship: v.string(),
+});
+
 const resultRowValidator = v.object({
   scoreId: v.id("candidateScores"),
   candidateId: v.id("candidates"),
@@ -35,12 +68,18 @@ const resultRowValidator = v.object({
   baseScore: v.number(),
   confidence: v.number(),
   summaryWhy: v.string(),
+  slug: v.string(),
   fullName: v.string(),
   headline: v.string(),
   currentCompany: v.optional(v.string()),
   location: v.optional(v.string()),
   stacks: v.array(v.string()),
   profileUrl: v.optional(v.string()),
+  companyLogoUrl: v.optional(v.string()),
+  githubSignal: v.number(),
+  blogSignal: v.number(),
+  networkProximity: v.number(),
+  ossContributions: v.number(),
 });
 
 export const getSearchResults = query({
@@ -88,6 +127,16 @@ export const getSearchResults = query({
         continue;
       }
 
+      const evidenceDocs = await ctx.db
+        .query("candidateEvidence")
+        .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
+        .take(20);
+
+      const signalCols = computeSignalColumns(
+        evidenceDocs.map((e) => ({ kind: e.kind, strength: e.strength })),
+        score.factorBreakdown,
+      );
+
       results.push({
         scoreId: score._id,
         candidateId: candidate._id,
@@ -96,12 +145,18 @@ export const getSearchResults = query({
         baseScore: score.baseScore,
         confidence: score.confidence,
         summaryWhy: score.summaryWhy,
+        slug: candidate.slug,
         fullName: candidate.fullName,
         headline: candidate.headline,
         currentCompany: candidate.currentCompany,
         location: candidate.location,
         stacks: candidate.stacks,
         profileUrl: candidate.profileUrl,
+        companyLogoUrl: candidate.companyLogoUrl,
+        githubSignal: signalCols.githubSignal,
+        blogSignal: signalCols.blogSignal,
+        networkProximity: signalCols.networkProximity,
+        ossContributions: signalCols.ossContributions,
       });
     }
 
@@ -139,7 +194,9 @@ export const getCandidateDossier = query({
       topStrengths: v.array(v.string()),
       risksOrGaps: v.array(v.string()),
       factorBreakdown: factorBreakdownValidator,
+      networkConnections: v.array(networkConnectionReturnValidator),
       candidate: v.object({
+        slug: v.string(),
         fullName: v.string(),
         headline: v.string(),
         summary: v.string(),
@@ -152,6 +209,11 @@ export const getCandidateDossier = query({
         seniority: v.string(),
         stacks: v.array(v.string()),
         domains: v.array(v.string()),
+        avatarDisplayUrl: v.string(),
+        companyLogoUrl: v.optional(v.string()),
+        socialGithub: v.optional(v.string()),
+        socialBlog: v.optional(v.string()),
+        socialTwitter: v.optional(v.string()),
       }),
       evidence: v.array(
         v.object({
@@ -217,6 +279,8 @@ export const getCandidateDossier = query({
       .withIndex("by_scoreId", (q) => q.eq("scoreId", score._id))
       .take(20);
 
+    const avatarDisplayUrl = `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(candidate.slug)}`;
+
     return {
       scoreId: score._id,
       candidateId: candidate._id,
@@ -228,7 +292,9 @@ export const getCandidateDossier = query({
       topStrengths: score.topStrengths,
       risksOrGaps: score.risksOrGaps,
       factorBreakdown: score.factorBreakdown,
+      networkConnections: candidate.networkConnections ?? [],
       candidate: {
+        slug: candidate.slug,
         fullName: candidate.fullName,
         headline: candidate.headline,
         summary: candidate.summary,
@@ -241,6 +307,11 @@ export const getCandidateDossier = query({
         seniority: candidate.seniority,
         stacks: candidate.stacks,
         domains: candidate.domains,
+        avatarDisplayUrl,
+        companyLogoUrl: candidate.companyLogoUrl,
+        socialGithub: candidate.socialGithub,
+        socialBlog: candidate.socialBlog,
+        socialTwitter: candidate.socialTwitter,
       },
       evidence,
       feedback: feedbackDocs.map((item) => ({

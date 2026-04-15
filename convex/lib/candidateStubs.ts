@@ -1,5 +1,10 @@
 import type { CandidateStub } from "./ranking";
 
+const avatarUrl = (seed: string) =>
+  `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
+
+const companyLogo = (domain: string) => `https://logo.clearbit.com/${domain}`;
+
 export const candidateStubs: CandidateStub[] = [
   {
     slug: "maya-chen",
@@ -19,6 +24,37 @@ export const candidateStubs: CandidateStub[] = [
     roleKeywords: ["staff engineer", "full-stack", "developer tools", "realtime systems"],
     signalConfidence: 0.92,
     reachabilityScore: 0.8,
+    companyLogoUrl: companyLogo("mergeboard.com"),
+    socialGithub: "github.com/maya-chen",
+    socialBlog: "mayachen.dev",
+    socialTwitter: "@mayac",
+    networkConnections: [
+      {
+        id: "maya-c1",
+        name: "Ravi Patel",
+        avatar: avatarUrl("ravi-patel"),
+        role: "angel investor",
+        channels: [{ type: "company", detail: "warm intro through portfolio" }],
+        strength: "strong",
+        lastInteraction: "3 weeks ago",
+        sharedProjects: 2,
+        relationship: "investor",
+      },
+      {
+        id: "maya-c2",
+        name: "Clara Olsen",
+        avatar: avatarUrl("clara-olsen"),
+        role: "staff engineer @ mergeboard",
+        channels: [
+          { type: "github", detail: "co-maintained realtime infra" },
+          { type: "slack", detail: "platform guild" },
+        ],
+        strength: "medium",
+        lastInteraction: "2 months ago",
+        sharedProjects: 3,
+        relationship: "colleague",
+      },
+    ],
     evidence: [
       {
         evidenceId: "maya-repo-realtime-presence",
@@ -72,6 +108,37 @@ export const candidateStubs: CandidateStub[] = [
     roleKeywords: ["principal engineer", "distributed systems", "platform", "infra"],
     signalConfidence: 0.9,
     reachabilityScore: 0.68,
+    companyLogoUrl: companyLogo("threadgraph.com"),
+    socialGithub: "github.com/julian-ortega",
+    socialBlog: "julian.dev",
+    socialTwitter: "@julian_o",
+    networkConnections: [
+      {
+        id: "jul-c1",
+        name: "Nia Park",
+        avatar: avatarUrl("nia-park"),
+        role: "operator @ seed fund",
+        channels: [{ type: "conference", detail: "systems week 2024" }],
+        strength: "strong",
+        lastInteraction: "3 weeks ago",
+        sharedProjects: 1,
+        relationship: "intro path",
+      },
+      {
+        id: "jul-c2",
+        name: "Omar Reyes",
+        avatar: avatarUrl("omar-reyes"),
+        role: "principal engineer @ threadgraph",
+        channels: [
+          { type: "company", detail: "reporting line overlap" },
+          { type: "github", detail: "scheduler reviews" },
+        ],
+        strength: "medium",
+        lastInteraction: "6 weeks ago",
+        sharedProjects: 4,
+        relationship: "former teammate",
+      },
+    ],
     evidence: [
       {
         evidenceId: "julian-repo-scheduler",
@@ -123,6 +190,23 @@ export const candidateStubs: CandidateStub[] = [
     roleKeywords: ["senior frontend engineer", "react", "product engineer"],
     signalConfidence: 0.79,
     reachabilityScore: 0.42,
+    companyLogoUrl: companyLogo("canvasloop.com"),
+    socialGithub: "github.com/alina-patel",
+    socialBlog: "alinap.design",
+    socialTwitter: "@alinap",
+    networkConnections: [
+      {
+        id: "ali-c1",
+        name: "Priya Nair",
+        avatar: avatarUrl("priya-nair"),
+        role: "design lead @ canvasloop",
+        channels: [{ type: "company", detail: "product pod" }],
+        strength: "strong",
+        lastInteraction: "1 month ago",
+        sharedProjects: 5,
+        relationship: "colleague",
+      },
+    ],
     evidence: [
       {
         evidenceId: "alina-repo-editor-performance",
@@ -166,6 +250,26 @@ export const candidateStubs: CandidateStub[] = [
     roleKeywords: ["engineering manager", "player coach", "ai products"],
     signalConfidence: 0.71,
     reachabilityScore: 0.76,
+    companyLogoUrl: companyLogo("northsignal.com"),
+    socialGithub: "github.com/samir-haddad",
+    socialBlog: "samir.ai",
+    socialTwitter: "@samir_h",
+    networkConnections: [
+      {
+        id: "sam-c1",
+        name: "Elena Voss",
+        avatar: avatarUrl("elena-voss"),
+        role: "founder",
+        channels: [
+          { type: "conference", detail: "warm intro path" },
+          { type: "company", detail: "advisor board" },
+        ],
+        strength: "strong",
+        lastInteraction: "2 weeks ago",
+        sharedProjects: 4,
+        relationship: "founder",
+      },
+    ],
     evidence: [
       {
         evidenceId: "samir-employment-ai",
@@ -206,6 +310,34 @@ export const candidateStubs: CandidateStub[] = [
     roleKeywords: ["backend engineer", "api", "data platform"],
     signalConfidence: 0.85,
     reachabilityScore: 0.38,
+    companyLogoUrl: companyLogo("ledgerflow.com"),
+    socialGithub: "github.com/nora-kim",
+    socialBlog: "nora.engineering",
+    socialTwitter: "@norak",
+    networkConnections: [
+      {
+        id: "nor-c1",
+        name: "Chris Doyle",
+        avatar: avatarUrl("chris-doyle"),
+        role: "sre lead",
+        channels: [{ type: "slack", detail: "incident channel" }],
+        strength: "medium",
+        lastInteraction: "1 month ago",
+        sharedProjects: 2,
+        relationship: "colleague",
+      },
+      {
+        id: "nor-c2",
+        name: "Ines Costa",
+        avatar: avatarUrl("ines-costa"),
+        role: "staff engineer @ ledgerflow",
+        channels: [{ type: "company", detail: "platform team" }],
+        strength: "weak",
+        lastInteraction: "4 months ago",
+        sharedProjects: 1,
+        relationship: "cross-team",
+      },
+    ],
     evidence: [
       {
         evidenceId: "nora-repo-api-platform",
@@ -248,6 +380,37 @@ export const candidateStubs: CandidateStub[] = [
     roleKeywords: ["staff engineer", "developer experience", "open source"],
     signalConfidence: 0.88,
     reachabilityScore: 0.73,
+    companyLogoUrl: companyLogo("querydock.com"),
+    socialGithub: "github.com/leo-santos",
+    socialBlog: "leo.dev",
+    socialTwitter: "@leosantos",
+    networkConnections: [
+      {
+        id: "leo-c1",
+        name: "Priya Shah",
+        avatar: avatarUrl("priya-shah"),
+        role: "investor",
+        channels: [{ type: "conference", detail: "devtools summit" }],
+        strength: "strong",
+        lastInteraction: "3 weeks ago",
+        sharedProjects: 2,
+        relationship: "investor intro",
+      },
+      {
+        id: "leo-c2",
+        name: "Dan Wu",
+        avatar: avatarUrl("dan-wu"),
+        role: "maintainer @ oss",
+        channels: [
+          { type: "oss", detail: "shared RFCs" },
+          { type: "github", detail: "co-maintainer" },
+        ],
+        strength: "medium",
+        lastInteraction: "5 weeks ago",
+        sharedProjects: 3,
+        relationship: "oss collaborator",
+      },
+    ],
     evidence: [
       {
         evidenceId: "leo-repo-dx-cli",

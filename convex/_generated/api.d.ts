@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as intake from "../intake.js";
 import type * as lib_candidateStubs from "../lib/candidateStubs.js";
 import type * as lib_ranking from "../lib/ranking.js";
+import type * as lib_signals from "../lib/signals.js";
 import type * as ranking from "../ranking.js";
 import type * as rankingActions from "../rankingActions.js";
 import type * as searchAction from "../searchAction.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   intake: typeof intake;
   "lib/candidateStubs": typeof lib_candidateStubs;
   "lib/ranking": typeof lib_ranking;
+  "lib/signals": typeof lib_signals;
   ranking: typeof ranking;
   rankingActions: typeof rankingActions;
   searchAction: typeof searchAction;
