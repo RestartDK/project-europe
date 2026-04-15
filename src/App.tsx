@@ -1,33 +1,45 @@
-import { useQuery } from "convex/react"
+import { useCallback, useState } from "react"
 
-import { api } from "../convex/_generated/api"
+import { ContextScreen } from "@/components/talent-compass/context-screen"
+import { DiscoveryScreen } from "@/components/talent-compass/discovery-screen"
+import { DossierScreen } from "@/components/talent-compass/dossier-screen"
+import { ResultsScreen } from "@/components/talent-compass/results-screen"
+import { TalentThemeToggle } from "@/components/talent-compass/theme-toggle"
+import type { Candidate } from "@/data/candidates"
+
+type Screen = "context" | "discovery" | "results" | "dossier"
 
 export function App() {
-  const status = useQuery(api.status.get)
+  const [screen, setScreen] = useState<Screen>("context")
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null
+  )
+
+  const handleDiscoveryComplete = useCallback(() => setScreen("results"), [])
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-6">
-      <div className="flex w-full max-w-xl min-w-0 flex-col gap-4 rounded-2xl border bg-card p-6 text-sm shadow-sm">
-        <div className="space-y-2">
-          <h1 className="text-xl font-semibold">Convex is set up</h1>
-          <p className="text-muted-foreground">
-            This app is now wrapped in `ConvexProvider` and reading from a live
-            query at `api.status.get`.
-          </p>
-        </div>
-
-        <div className="rounded-xl border bg-muted/40 p-4 font-mono text-xs leading-6">
-          <div>Query result: {status?.message ?? "Loading..."}</div>
-          <div>Environment: {status?.environment ?? "loading"}</div>
-          <div>Client URL: {import.meta.env.VITE_CONVEX_URL}</div>
-          <div>Backend file: convex/status.ts</div>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Run `bunx convex dev` while developing so Convex can watch, deploy,
-          and regenerate types as you change functions.
-        </p>
-      </div>
+    <div className="min-h-svh bg-background">
+      <TalentThemeToggle />
+      {screen === "context" && (
+        <ContextScreen onStartDiscovery={() => setScreen("discovery")} />
+      )}
+      {screen === "discovery" && (
+        <DiscoveryScreen onComplete={handleDiscoveryComplete} />
+      )}
+      {screen === "results" && (
+        <ResultsScreen
+          onSelectCandidate={(c) => {
+            setSelectedCandidate(c)
+            setScreen("dossier")
+          }}
+        />
+      )}
+      {screen === "dossier" && selectedCandidate && (
+        <DossierScreen
+          candidate={selectedCandidate}
+          onBack={() => setScreen("results")}
+        />
+      )}
     </div>
   )
 }
