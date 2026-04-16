@@ -43,6 +43,7 @@ const evidenceValidator = v.object({
   strength: v.number(),
   recencyYears: v.number(),
   tags: v.array(v.string()),
+  relevanceDisplay: v.optional(v.string()),
 });
 
 const candidateBundleValidator = v.array(
@@ -65,6 +66,7 @@ const candidateBundleValidator = v.array(
     roleKeywords: v.array(v.string()),
     signalConfidence: v.number(),
     reachabilityScore: v.number(),
+    age: v.optional(v.number()),
     evidence: v.array(evidenceValidator),
   }),
 );
@@ -107,6 +109,7 @@ type CandidateBundle = {
   roleKeywords: string[];
   signalConfidence: number;
   reachabilityScore: number;
+  age?: number;
   evidence: CandidateStub["evidence"];
 };
 
@@ -222,6 +225,7 @@ export const seedStubCandidates = internalMutation({
           strength: evidence.strength,
           recencyYears: evidence.recencyYears,
           tags: evidence.tags,
+          relevanceDisplay: evidence.relevanceDisplay,
         });
       }
     }
@@ -318,6 +322,7 @@ export const getCandidateBundle = internalQuery({
         roleKeywords: candidate.roleKeywords,
         signalConfidence: candidate.signalConfidence,
         reachabilityScore: candidate.reachabilityScore,
+        age: candidate.age,
         evidence: evidence.map((item) => ({
           evidenceId: item.evidenceId,
           kind: item.kind,
@@ -327,6 +332,7 @@ export const getCandidateBundle = internalQuery({
           strength: item.strength,
           recencyYears: item.recencyYears,
           tags: item.tags,
+          relevanceDisplay: item.relevanceDisplay,
         })),
       });
     }
@@ -448,6 +454,7 @@ function toCandidateStub(bundle: CandidateBundle): CandidateStub {
     roleKeywords: bundle.roleKeywords,
     signalConfidence: bundle.signalConfidence,
     reachabilityScore: bundle.reachabilityScore,
+    age: bundle.age,
     evidence: bundle.evidence,
   };
 }

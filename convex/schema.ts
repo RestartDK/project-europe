@@ -85,6 +85,7 @@ export default defineSchema({
     warmIntroPath: v.optional(v.string()),
     networkConnections: v.optional(v.array(networkConnectionValidator)),
     pdlScore: v.optional(v.number()),
+    age: v.optional(v.number()),
   })
     .index("by_requestId", ["requestId"])
     .index("by_requestId_and_slug", ["requestId", "slug"])
@@ -108,6 +109,7 @@ export default defineSchema({
     strength: v.number(),
     recencyYears: v.number(),
     tags: v.array(v.string()),
+    relevanceDisplay: v.optional(v.string()),
   })
     .index("by_requestId_and_candidateId", ["requestId", "candidateId"])
     .index("by_candidateId", ["candidateId"]),

@@ -1,7 +1,7 @@
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { v } from "convex/values";
 
-import { computeSignalColumns } from "./lib/signals";
+import { deriveInfoSources } from "./lib/infoSources";
 
 const requestStatusValidator = v.union(
   v.literal("pending"),
@@ -10,13 +10,6 @@ const requestStatusValidator = v.union(
   v.literal("ranking"),
   v.literal("ranked"),
   v.literal("error"),
-);
-
-const feedbackDispositionValidator = v.union(
-  v.literal("thumbs_up"),
-  v.literal("thumbs_down"),
-  v.literal("hide"),
-  v.literal("promote"),
 );
 
 const factorBreakdownValidator = v.object({
@@ -76,10 +69,16 @@ const resultRowValidator = v.object({
   stacks: v.array(v.string()),
   profileUrl: v.optional(v.string()),
   companyLogoUrl: v.optional(v.string()),
-  githubSignal: v.number(),
-  blogSignal: v.number(),
-  networkProximity: v.number(),
-  ossContributions: v.number(),
+  infoSources: v.array(
+    v.union(
+      v.literal("linkedin"),
+      v.literal("github"),
+      v.literal("x"),
+      v.literal("website"),
+      v.literal("reddit"),
+      v.literal("youtube"),
+    ),
+  ),
 });
 
 export const getSearchResults = query({
@@ -133,10 +132,7 @@ export const getSearchResults = query({
         .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
         .take(20);
 
-      const signalCols = computeSignalColumns(
-        evidenceDocs.map((e) => ({ kind: e.kind, strength: e.strength })),
-        score.factorBreakdown,
-      );
+      const infoSources = deriveInfoSources(candidate, evidenceDocs);
 
       results.push({
         scoreId: score._id,
@@ -154,10 +150,7 @@ export const getSearchResults = query({
         stacks: person.stacks,
         profileUrl: person.linkedinUrl,
         companyLogoUrl: person.companyLogoUrl,
-        githubSignal: signalCols.githubSignal,
-        blogSignal: signalCols.blogSignal,
-        networkProximity: signalCols.networkProximity,
-        ossContributions: signalCols.ossContributions,
+        infoSources,
       });
     }
 
@@ -215,6 +208,7 @@ export const getCandidateDossier = query({
         socialGithub: v.optional(v.string()),
         socialBlog: v.optional(v.string()),
         socialTwitter: v.optional(v.string()),
+        age: v.optional(v.number()),
       }),
       evidence: v.array(
         v.object({
@@ -233,13 +227,7 @@ export const getCandidateDossier = query({
           tags: v.array(v.string()),
           strength: v.number(),
           recencyYears: v.number(),
-        }),
-      ),
-      feedback: v.array(
-        v.object({
-          feedbackId: v.id("rankingFeedback"),
-          disposition: feedbackDispositionValidator,
-          note: v.optional(v.string()),
+          relevanceDisplay: v.optional(v.string()),
         }),
       ),
     }),
@@ -257,14 +245,14 @@ export const getCandidateDossier = query({
     const person = await ctx.db.get(candidate.personId);
     if (!person) return null;
 
-    const evidence = [];
-    for (const evidenceId of score.evidenceRefIds) {
-      const evidenceDoc = await ctx.db.get(evidenceId);
-      if (!evidenceDoc) {
-        continue;
-      }
+    const evidenceDocs = await ctx.db
+      .query("candidateEvidence")
+      .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
+      .take(200);
 
-      evidence.push({
+    const evidence = [...evidenceDocs]
+      .sort((a, b) => b.strength - a.strength)
+      .map((evidenceDoc) => ({
         evidenceId: evidenceDoc._id,
         title: evidenceDoc.title,
         kind: evidenceDoc.kind,
@@ -273,13 +261,8 @@ export const getCandidateDossier = query({
         tags: evidenceDoc.tags,
         strength: evidenceDoc.strength,
         recencyYears: evidenceDoc.recencyYears,
-      });
-    }
-
-    const feedbackDocs = await ctx.db
-      .query("rankingFeedback")
-      .withIndex("by_scoreId", (q) => q.eq("scoreId", score._id))
-      .take(20);
+        relevanceDisplay: evidenceDoc.relevanceDisplay,
+      }));
 
     const avatarDisplayUrl = `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(candidate.slug)}`;
 
@@ -314,31 +297,9 @@ export const getCandidateDossier = query({
         socialGithub: person.socialGithub,
         socialBlog: person.socialBlog,
         socialTwitter: person.socialTwitter,
+        age: candidate.age,
       },
       evidence,
-      feedback: feedbackDocs.map((item) => ({
-        feedbackId: item._id,
-        disposition: item.disposition,
-        note: item.note,
-      })),
     };
-  },
-});
-
-export const submitFeedback = mutation({
-  args: {
-    requestId: v.id("searchRequests"),
-    scoreId: v.id("candidateScores"),
-    disposition: feedbackDispositionValidator,
-    note: v.optional(v.string()),
-  },
-  returns: v.id("rankingFeedback"),
-  handler: async (ctx, args) => {
-    return await ctx.db.insert("rankingFeedback", {
-      requestId: args.requestId,
-      scoreId: args.scoreId,
-      disposition: args.disposition,
-      note: args.note,
-    });
   },
 });

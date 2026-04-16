@@ -15,6 +15,7 @@ import type * as clay from "../clay.js";
 import type * as http from "../http.js";
 import type * as intake from "../intake.js";
 import type * as lib_candidateStubs from "../lib/candidateStubs.js";
+import type * as lib_infoSources from "../lib/infoSources.js";
 import type * as lib_pdl from "../lib/pdl.js";
 import type * as lib_ranking from "../lib/ranking.js";
 import type * as lib_signals from "../lib/signals.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   intake: typeof intake;
   "lib/candidateStubs": typeof lib_candidateStubs;
+  "lib/infoSources": typeof lib_infoSources;
   "lib/pdl": typeof lib_pdl;
   "lib/ranking": typeof lib_ranking;
   "lib/signals": typeof lib_signals;
