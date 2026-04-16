@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { internalAction, internalMutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 
@@ -31,15 +31,6 @@ export const saveSearchRequest = internalMutation({
       status: "ready_for_clay",
       promptVersion: args.promptVersion,
     });
-  },
-});
-
-export const enqueueClayStub = internalAction({
-  args: { requestId: v.id("searchRequests") },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.runAction(internal.clay.enqueueStub, { requestId: args.requestId });
-    return null;
   },
 });
 
@@ -117,9 +108,7 @@ export const extractSearchCriteria = action({
       promptVersion,
     });
 
-    await ctx.runAction(internal.intake.enqueueClayStub, { requestId });
-
-    console.log("[intake] search request saved, enqueueing Clay stub pipeline", {
+    console.log("[intake] search request saved", {
       requestId,
       threadId,
       criteriaSource,

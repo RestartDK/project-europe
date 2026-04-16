@@ -10,7 +10,6 @@
 
 import type * as agent from "../agent.js";
 import type * as agents from "../agents.js";
-import type * as candidatePool from "../candidatePool.js";
 import type * as candidates from "../candidates.js";
 import type * as clay from "../clay.js";
 import type * as http from "../http.js";
@@ -34,7 +33,6 @@ import type {
 declare const fullApi: ApiFromModules<{
   agent: typeof agent;
   agents: typeof agents;
-  candidatePool: typeof candidatePool;
   candidates: typeof candidates;
   clay: typeof clay;
   http: typeof http;

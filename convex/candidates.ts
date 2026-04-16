@@ -29,28 +29,29 @@ export const createCandidate = internalMutation({
 
 export const updateFromClay = internalMutation({
   args: {
-    candidateId: v.id("talentCandidates"),
-    skills: v.optional(v.array(v.string())),
-    accomplishmentSummary: v.optional(v.string()),
-    movabilityScore: v.optional(v.number()),
-    movabilityReason: v.optional(v.string()),
-    githubUrl: v.optional(v.string()),
-    rawClayData: v.optional(v.any()),
+    candidateId: v.id("candidates"),
+    email: v.optional(v.string()),
+    socialGithub: v.optional(v.string()),
+    socialTwitter: v.optional(v.string()),
+    socialBlog: v.optional(v.string()),
+    currentCompany: v.optional(v.string()),
+    headline: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    location: v.optional(v.string()),
+    stacks: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const candidate = await ctx.db.get(args.candidateId)
     if (!candidate) return null
 
-    await ctx.db.patch(args.candidateId, {
-      enriched: true,
-      enrichedAt: Date.now(),
-      skills: args.skills,
-      accomplishmentSummary: args.accomplishmentSummary,
-      movabilityScore: args.movabilityScore,
-      movabilityReason: args.movabilityReason,
-      githubUrl: args.githubUrl,
-      rawClayData: args.rawClayData,
-    })
+    const { candidateId, ...fields } = args
+    const patch: Record<string, unknown> = {}
+    for (const [k, val] of Object.entries(fields)) {
+      if (val !== undefined) patch[k] = val
+    }
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(candidateId, patch)
+    }
     return null
   },
 })

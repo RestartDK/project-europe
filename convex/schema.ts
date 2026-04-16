@@ -163,20 +163,6 @@ export default defineSchema({
     note: v.optional(v.string()),
   }).index("by_scoreId", ["scoreId"]),
 
-  candidatePool: defineTable({
-    name: v.string(),
-    linkedinUrl: v.optional(v.string()),
-    currentTitle: v.optional(v.string()),
-    currentCompany: v.optional(v.string()),
-    location: v.optional(v.string()),
-    skills: v.optional(v.array(v.string())),
-    jobTitleLevels: v.optional(v.array(v.string())),
-    jobTitleSubRole: v.optional(v.string()),
-    jobTitleRole: v.optional(v.string()),
-    githubUrl: v.optional(v.string()),
-    importedAt: v.number(),
-  }).index("by_linkedinUrl", ["linkedinUrl"]),
-
   searches: defineTable({
     query: v.string(),
     company: v.optional(v.string()),

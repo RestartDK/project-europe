@@ -2,6 +2,7 @@
 import { convexTest } from "convex-test"
 import { expect, test, describe } from "vitest"
 import { api, internal } from "./_generated/api"
+import type { Id } from "./_generated/dataModel"
 import schema from "./schema"
 
 const modules = import.meta.glob("./**/*.ts")
@@ -33,60 +34,74 @@ describe("createCandidate", () => {
 })
 
 describe("updateFromClay", () => {
+  const insertTestCandidate = async (t: ReturnType<typeof convexTest>, requestId: Id<"searchRequests">) => {
+    return await t.run(async (ctx) => {
+      return await ctx.db.insert("candidates", {
+        requestId,
+        slug: "bob-jones",
+        fullName: "Bob Jones",
+        headline: "Engineer",
+        summary: "Engineer at Acme",
+        yearsExperience: 5,
+        seniority: "senior",
+        stacks: [],
+        domains: [],
+        roleKeywords: [],
+        signalConfidence: 50,
+        reachabilityScore: 50,
+      })
+    })
+  }
+
   test("enriches a candidate with Clay data", async () => {
     const t = convexTest(schema, modules)
-    const searchId = await t.mutation(internal.searches.createSearch, {
-      query: "test",
-      pdlParams: {},
+    const requestId = await t.run(async (ctx) => {
+      return await ctx.db.insert("searchRequests", {
+        threadId: "test-thread",
+        rawPrompt: "test",
+        criteriaJson: "{}",
+        status: "ranked",
+        promptVersion: "v1",
+      })
     })
-    const candidateId = await t.mutation(internal.candidates.createCandidate, {
-      searchId,
-      name: "Bob Jones",
-      linkedinUrl: "https://linkedin.com/in/bob",
-    })
+    const candidateId = await insertTestCandidate(t, requestId)
     await t.mutation(internal.candidates.updateFromClay, {
       candidateId,
-      skills: ["Python", "TypeScript"],
-      accomplishmentSummary: "Led payments rewrite at Stripe",
-      movabilityScore: 8,
-      movabilityReason: "Recently promoted, looking for new challenges",
-      githubUrl: "https://github.com/bob",
-      rawClayData: { source: "clay" },
+      stacks: ["Python", "TypeScript"],
+      socialGithub: "https://github.com/bob",
     })
-    const candidates = await t.query(api.candidates.getCandidatesForSearch, {
-      searchId,
+    const candidate = await t.run(async (ctx) => {
+      return await ctx.db.get(candidateId)
     })
-    expect(candidates[0].enriched).toBe(true)
-    expect(candidates[0].skills).toEqual(["Python", "TypeScript"])
-    expect(candidates[0].movabilityScore).toBe(8)
-    expect(candidates[0].enrichedAt).toBeDefined()
+    expect(candidate).not.toBeNull()
+    expect(candidate!.stacks).toEqual(["Python", "TypeScript"])
+    expect(candidate!.socialGithub).toBe("https://github.com/bob")
   })
 
-  test("silently ignores unknown candidateId", async () => {
+  test("is idempotent — second call overwrites first", async () => {
     const t = convexTest(schema, modules)
-    const searchId = await t.mutation(internal.searches.createSearch, {
-      query: "test",
-      pdlParams: {},
+    const requestId = await t.run(async (ctx) => {
+      return await ctx.db.insert("searchRequests", {
+        threadId: "test-thread",
+        rawPrompt: "test",
+        criteriaJson: "{}",
+        status: "ranked",
+        promptVersion: "v1",
+      })
     })
-    const candidateId = await t.mutation(internal.candidates.createCandidate, {
-      searchId,
-      name: "Temp",
-    })
-    // Delete and try to update with the now-stale ID to simulate unknown
-    // convex-test doesn't have a delete method, so we verify it throws or handles gracefully
-    // by calling with a real but enriched candidate (idempotent check)
+    const candidateId = await insertTestCandidate(t, requestId)
     await t.mutation(internal.candidates.updateFromClay, {
       candidateId,
-      skills: ["Go"],
+      stacks: ["Go"],
     })
     await t.mutation(internal.candidates.updateFromClay, {
       candidateId,
-      skills: ["Go", "Rust"],
+      stacks: ["Go", "Rust"],
     })
-    const candidates = await t.query(api.candidates.getCandidatesForSearch, {
-      searchId,
+    const candidate = await t.run(async (ctx) => {
+      return await ctx.db.get(candidateId)
     })
-    expect(candidates[0].skills).toEqual(["Go", "Rust"])
+    expect(candidate!.stacks).toEqual(["Go", "Rust"])
   })
 })
 
