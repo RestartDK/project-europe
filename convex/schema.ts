@@ -97,6 +97,7 @@ export default defineSchema({
     networkConnections: v.optional(v.array(networkConnectionValidator)),
     pdlScore: v.optional(v.number()),
     age: v.optional(v.number()),
+    outreachEmail: v.optional(v.string()),
   })
     .index("by_requestId", ["requestId"])
     .index("by_requestId_and_slug", ["requestId", "slug"])
