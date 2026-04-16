@@ -12,6 +12,7 @@ import type * as agent from "../agent.js";
 import type * as agents from "../agents.js";
 import type * as candidates from "../candidates.js";
 import type * as clay from "../clay.js";
+import type * as github from "../github.js";
 import type * as http from "../http.js";
 import type * as intake from "../intake.js";
 import type * as lib_candidateStubs from "../lib/candidateStubs.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   agents: typeof agents;
   candidates: typeof candidates;
   clay: typeof clay;
+  github: typeof github;
   http: typeof http;
   intake: typeof intake;
   "lib/candidateStubs": typeof lib_candidateStubs;
