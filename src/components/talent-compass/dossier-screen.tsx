@@ -234,6 +234,31 @@ export function DossierScreen({ dossier }: Props) {
               </div>
             )}
 
+            {dossier.outreachEmail && (
+              <div className="space-y-2">
+                <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
+                  outreach draft
+                </CardTitle>
+                <textarea
+                  readOnly
+                  className="w-full resize-none rounded-lg border border-border bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-foreground"
+                  rows={7}
+                  value={dossier.outreachEmail}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-7 rounded-full px-2.5 text-[10px]"
+                  onClick={() =>
+                    void navigator.clipboard.writeText(dossier.outreachEmail!)
+                  }
+                >
+                  copy
+                </Button>
+              </div>
+            )}
+
             {socialLinks.length > 0 && (
               <div>
                 <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">

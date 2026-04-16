@@ -242,6 +242,7 @@ export const getCandidateDossier = query({
         age: v.optional(v.number()),
         enrichmentStatus: enrichmentStatusValidator,
       }),
+      outreachEmail: v.optional(v.string()),
       evidence: v.array(
         v.object({
           evidenceId: v.id("candidateEvidence"),
@@ -333,6 +334,7 @@ export const getCandidateDossier = query({
         age: candidate.age,
         enrichmentStatus,
       },
+      outreachEmail: candidate.outreachEmail,
       evidence,
     }
   },
