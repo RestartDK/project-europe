@@ -10,8 +10,8 @@ import {
   ThumbsUp,
 } from "lucide-react";
 
+import { deriveDossierEvidenceSource } from "@/components/talent-compass/derive-dossier-evidence-source";
 import {
-  deriveDossierEvidenceSource,
   MetricBrandGitHub,
   MetricBrandLinkedIn,
   MetricBrandReddit,
