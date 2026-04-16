@@ -33,7 +33,7 @@ export function App() {
     selectedScoreId ? { scoreId: selectedScoreId } : "skip",
   )
 
-  const discoveryStatus = searchResults?.status ?? "ready_for_clay"
+  const discoveryStatus = searchResults?.status ?? "pending"
   const discoveryErrorMessage = searchResults?.errorMessage
 
   const effectiveScreen: Screen = (() => {

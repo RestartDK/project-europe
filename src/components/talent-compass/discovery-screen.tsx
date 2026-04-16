@@ -5,9 +5,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type RankingStatus =
-  | "ready_for_clay"
-  | "clay_queued"
-  | "importing_candidates"
+  | "pending"
+  | "searching"
+  | "enriching"
   | "ranking"
   | "ranked"
   | "error"
@@ -20,12 +20,12 @@ type Props = {
 
 function statusCopy(status: RankingStatus) {
   switch (status) {
-    case "ready_for_clay":
-      return "preparing candidate search…"
-    case "clay_queued":
-      return "queueing candidate import…"
-    case "importing_candidates":
-      return "importing candidates…"
+    case "pending":
+      return "preparing search…"
+    case "searching":
+      return "searching for candidates…"
+    case "enriching":
+      return "enriching candidate data…"
     case "ranking":
       return "ranking candidates…"
     case "ranked":

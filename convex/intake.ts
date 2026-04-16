@@ -28,18 +28,9 @@ export const saveSearchRequest = internalMutation({
       rawPrompt: args.rawPrompt,
       companyContext: args.companyContext,
       criteriaJson: args.criteriaJson,
-      status: "ready_for_clay",
+      status: "pending",
       promptVersion: args.promptVersion,
     });
-  },
-});
-
-export const enqueueClayStub = internalAction({
-  args: { requestId: v.id("searchRequests") },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.runAction(internal.clay.enqueueStub, { requestId: args.requestId });
-    return null;
   },
 });
 
@@ -117,9 +108,7 @@ export const extractSearchCriteria = action({
       promptVersion,
     });
 
-    await ctx.scheduler.runAfter(0, internal.intake.enqueueClayStub, { requestId });
-
-    console.log("[intake] search request saved, enqueueing Clay stub pipeline", {
+    console.log("[intake] search request saved", {
       requestId,
       threadId,
       criteriaSource,
@@ -127,7 +116,75 @@ export const extractSearchCriteria = action({
       stackCount: criteria.stack.length,
     });
 
+    // Fire off the full pipeline: PDL search -> ranking -> Clay enrichment
+    await ctx.runAction(internal.intake.runSearchPipeline, { requestId });
+
     return { requestId, criteriaJson, threadId };
   },
 });
 
+/**
+ * Full pipeline: PDL search -> rank -> async Clay enrichment.
+ */
+export const runSearchPipeline = internalAction({
+  args: { requestId: v.id("searchRequests") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    try {
+      // Step 1: PDL search
+      const pdlResult = await ctx.runAction(internal.pdlSearch.runPdlSearch, {
+        requestId: args.requestId,
+      });
+
+      console.log("[pipeline] PDL search complete", {
+        requestId: args.requestId,
+        ...pdlResult,
+      });
+
+      if (pdlResult.candidatesCreated === 0) {
+        await ctx.runMutation(internal.rankingActions.setSearchRequestStatus, {
+          requestId: args.requestId,
+          status: "error",
+          errorMessage: "No candidates found from PDL search.",
+        });
+        return null;
+      }
+
+      // Step 2: Rank
+      const rankResult = await ctx.runAction(internal.rankingActions.runRanking, {
+        requestId: args.requestId,
+      });
+
+      console.log("[pipeline] ranking complete", {
+        requestId: args.requestId,
+        rankingStatus: rankResult.status,
+        rankingRunId: rankResult.rankingRunId,
+      });
+
+      // Step 3: Push to Clay for async enrichment (best-effort)
+      try {
+        await ctx.runAction(internal.clay.pushCandidatesToClay, {
+          requestId: args.requestId,
+        });
+        console.log("[pipeline] Clay push complete", { requestId: args.requestId });
+      } catch (clayError) {
+        console.log("[pipeline] Clay push failed (non-fatal)", {
+          requestId: args.requestId,
+          error: clayError instanceof Error ? clayError.message : String(clayError),
+        });
+      }
+    } catch (error) {
+      console.log("[pipeline] fatal error", {
+        requestId: args.requestId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      await ctx.runMutation(internal.rankingActions.setSearchRequestStatus, {
+        requestId: args.requestId,
+        status: "error",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    return null;
+  },
+});
