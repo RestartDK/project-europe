@@ -1,22 +1,22 @@
-import { motion } from "framer-motion";
-import type { FunctionReturnType } from "convex/server";
+import { motion } from "framer-motion"
+import type { FunctionReturnType } from "convex/server"
 
-import { ConnectionCard } from "@/components/talent-compass/connection-card";
-import { GithubCommitGraph } from "@/components/talent-compass/github-commit-graph";
-import { DossierEvidenceSourceIcon } from "@/components/talent-compass/info-source-icons";
-import { RelevanceSignalIcon } from "@/components/talent-compass/relevance-signal-icon";
-import { NetworkGraph } from "@/components/talent-compass/network-graph";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { ConnectionCard } from "@/components/talent-compass/connection-card"
+import { GithubCommitGraph } from "@/components/talent-compass/github-commit-graph"
+import { DossierEvidenceSourceIcon } from "@/components/talent-compass/info-source-icons"
+import { RelevanceSignalIcon } from "@/components/talent-compass/relevance-signal-icon"
+import { NetworkGraph } from "@/components/talent-compass/network-graph"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 import {
   Table,
   TableBody,
@@ -24,18 +24,35 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import type { NetworkConnection } from "@/types/network";
-import { api } from "../../../convex/_generated/api";
+} from "@/components/ui/table"
+import type { NetworkConnection } from "@/types/network"
+import { api } from "../../../convex/_generated/api"
 
-type Dossier = FunctionReturnType<typeof api.ranking.getCandidateDossier>;
+type Dossier = FunctionReturnType<typeof api.ranking.getCandidateDossier>
 
 type Props = {
-  dossier: Dossier | null | undefined;
-};
+  dossier: Dossier | null | undefined
+}
 
 function normalizeHref(href: string) {
-  return href.startsWith("http") ? href : `https://${href}`;
+  return href.startsWith("http") ? href : `https://${href}`
+}
+
+function extractGithubUsername(href?: string) {
+  if (!href) return null
+
+  const normalized = normalizeHref(href).trim()
+
+  try {
+    const url = new URL(normalized)
+    if (!url.hostname.toLowerCase().includes("github.com")) {
+      return null
+    }
+    const [username] = url.pathname.split("/").filter(Boolean)
+    return username ?? null
+  } catch {
+    return null
+  }
 }
 
 export function DossierScreen({ dossier }: Props) {
@@ -46,7 +63,7 @@ export function DossierScreen({ dossier }: Props) {
           loading dossier…
         </div>
       </div>
-    );
+    )
   }
 
   if (dossier === null) {
@@ -56,40 +73,49 @@ export function DossierScreen({ dossier }: Props) {
           dossier not available.
         </div>
       </div>
-    );
+    )
   }
 
-  const c = dossier.candidate;
-  const connections = dossier.networkConnections as NetworkConnection[];
+  const c = dossier.candidate
+  const connections = dossier.networkConnections as NetworkConnection[]
 
-  const socialLinks: { label: string; href: string }[] = [];
+  const socialLinks: { label: string; href: string }[] = []
   if (c.profileUrl) {
-    const isLi = c.profileUrl.toLowerCase().includes("linkedin.com");
+    const isLi = c.profileUrl.toLowerCase().includes("linkedin.com")
     socialLinks.push({
       label: isLi ? "linkedin" : "profile",
       href: normalizeHref(c.profileUrl),
-    });
+    })
   }
   if (c.socialGithub) {
-    socialLinks.push({ label: "github", href: normalizeHref(c.socialGithub) });
+    socialLinks.push({ label: "github", href: normalizeHref(c.socialGithub) })
   }
   if (c.socialTwitter) {
-    socialLinks.push({ label: "x", href: normalizeHref(c.socialTwitter) });
+    socialLinks.push({ label: "x", href: normalizeHref(c.socialTwitter) })
   }
   if (c.socialBlog) {
-    socialLinks.push({ label: "blog", href: normalizeHref(c.socialBlog) });
+    socialLinks.push({ label: "blog", href: normalizeHref(c.socialBlog) })
   }
 
-  const rankedEvidence = [...dossier.evidence];
+  const rankedEvidence = [...dossier.evidence]
+  const githubUsername = extractGithubUsername(c.socialGithub)
 
   return (
     <div className="mx-auto min-h-0 w-full max-w-5xl flex-1 px-6 py-8">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="space-y-5"
+      >
         <Card className="rounded-2xl py-5">
           <CardContent className="space-y-5 px-5">
             <div className="flex items-start gap-4">
               <div className="size-14 shrink-0 overflow-hidden rounded-full border border-border">
-                <img src={c.avatarDisplayUrl} alt={c.fullName} className="size-full object-cover" />
+                <img
+                  src={c.avatarDisplayUrl}
+                  alt={c.fullName}
+                  className="size-full object-cover"
+                />
               </div>
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -100,7 +126,9 @@ export function DossierScreen({ dossier }: Props) {
                     <p className="text-[11px] text-muted-foreground">
                       <span className="text-foreground/80">age</span>{" "}
                       {c.age != null ? (
-                        <span className="tabular-nums text-foreground">{c.age}</span>
+                        <span className="text-foreground tabular-nums">
+                          {c.age}
+                        </span>
                       ) : (
                         <span>—</span>
                       )}
@@ -111,12 +139,12 @@ export function DossierScreen({ dossier }: Props) {
                         </>
                       ) : null}
                     </p>
-                    <p className="text-xs font-medium leading-snug text-foreground">
+                    <p className="text-xs leading-snug font-medium text-foreground">
                       {c.headline.toLowerCase()}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="font-heading text-2xl font-bold tabular-nums tracking-tight text-foreground sm:text-3xl">
+                    <div className="font-heading text-2xl font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
                       {Math.round(dossier.finalScore)}
                     </div>
                     <div className="text-[10px] font-medium tracking-wide text-muted-foreground sm:text-xs">
@@ -131,7 +159,9 @@ export function DossierScreen({ dossier }: Props) {
               <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
                 about
               </CardTitle>
-              <p className="text-xs leading-relaxed text-foreground">{c.summary.toLowerCase()}</p>
+              <p className="text-xs leading-relaxed text-foreground">
+                {c.summary.toLowerCase()}
+              </p>
               <p className="border-l-2 border-border pl-3 text-[11px] leading-relaxed text-muted-foreground">
                 {dossier.summaryWhy.toLowerCase()}
               </p>
@@ -199,11 +229,13 @@ export function DossierScreen({ dossier }: Props) {
               github activity
             </CardTitle>
             <CardDescription className="text-[10px]">
-              contribution-style view (placeholder grid)
+              {githubUsername
+                ? `live contribution graph for @${githubUsername.toLowerCase()}`
+                : "github profile not available"}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-5 pt-4">
-            <GithubCommitGraph seed={c.slug} />
+            <GithubCommitGraph username={githubUsername} />
           </CardContent>
         </Card>
 
@@ -230,7 +262,10 @@ export function DossierScreen({ dossier }: Props) {
                   {rankedEvidence.map((row) => (
                     <TableRow key={row.evidenceId} className="align-top">
                       <TableCell className="px-2 py-4">
-                        <DossierEvidenceSourceIcon url={row.url} kind={row.kind} />
+                        <DossierEvidenceSourceIcon
+                          url={row.url}
+                          kind={row.kind}
+                        />
                       </TableCell>
                       <TableCell className="max-w-0 px-2 py-4">
                         <div className="space-y-2">
@@ -267,7 +302,9 @@ export function DossierScreen({ dossier }: Props) {
                                   kind={row.kind}
                                   relevanceDisplay={row.relevanceDisplay}
                                 />
-                                <span className="min-w-0 truncate">{row.relevanceDisplay.toLowerCase()}</span>
+                                <span className="min-w-0 truncate">
+                                  {row.relevanceDisplay.toLowerCase()}
+                                </span>
                               </Badge>
                             ) : null}
                           </div>
@@ -289,9 +326,12 @@ export function DossierScreen({ dossier }: Props) {
             <CardHeader className="px-5 pb-0">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <div>
-                  <CardTitle className="font-heading text-sm">network</CardTitle>
+                  <CardTitle className="font-heading text-sm">
+                    network
+                  </CardTitle>
                   <CardDescription className="mt-0.5 text-[10px]">
-                    {connections.length} connection{connections.length !== 1 ? "s" : ""} to{" "}
+                    {connections.length} connection
+                    {connections.length !== 1 ? "s" : ""} to{" "}
                     {c.fullName.split(" ")[0]?.toLowerCase() ?? ""}
                   </CardDescription>
                 </div>
@@ -328,7 +368,11 @@ export function DossierScreen({ dossier }: Props) {
               <Separator />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {connections.map((conn) => (
-                  <ConnectionCard key={conn.id} conn={conn} candidateName={c.fullName} />
+                  <ConnectionCard
+                    key={conn.id}
+                    conn={conn}
+                    candidateName={c.fullName}
+                  />
                 ))}
               </div>
             </CardContent>
@@ -336,5 +380,5 @@ export function DossierScreen({ dossier }: Props) {
         )}
       </motion.div>
     </div>
-  );
+  )
 }
