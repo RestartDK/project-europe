@@ -117,7 +117,7 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((r) => (
+              {results.map((r, i) => (
                 <TableRow
                   key={r.scoreId}
                   onClick={() => onSelectScore(r.scoreId)}
