@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from "convex/server"
+import { v } from "convex/values"
 
 const connectionChannelValidator = v.union(
   v.literal("github"),
@@ -8,8 +8,8 @@ const connectionChannelValidator = v.union(
   v.literal("conference"),
   v.literal("company"),
   v.literal("university"),
-  v.literal("oss"),
-);
+  v.literal("oss")
+)
 
 const networkConnectionValidator = v.object({
   id: v.string(),
@@ -20,17 +20,24 @@ const networkConnectionValidator = v.object({
     v.object({
       type: connectionChannelValidator,
       detail: v.string(),
-    }),
+    })
   ),
   strength: v.union(
     v.literal("strong"),
     v.literal("medium"),
-    v.literal("weak"),
+    v.literal("weak")
   ),
   lastInteraction: v.string(),
   sharedProjects: v.number(),
   relationship: v.string(),
-});
+})
+
+const enrichmentStatusValidator = v.union(
+  v.literal("ready"),
+  v.literal("queued"),
+  v.literal("complete"),
+  v.literal("failed")
+)
 
 export default defineSchema({
   searchRequests: defineTable({
@@ -44,7 +51,7 @@ export default defineSchema({
       v.literal("ranking"),
       v.literal("ranked"),
       v.literal("enriching"),
-      v.literal("error"),
+      v.literal("error")
     ),
     promptVersion: v.string(),
     rankingVersion: v.optional(v.string()),
@@ -72,6 +79,10 @@ export default defineSchema({
     pdlId: v.optional(v.string()),
     pdlData: v.optional(v.any()),
     clayEnriched: v.boolean(),
+    enrichmentStatus: v.optional(enrichmentStatusValidator),
+    enrichmentRequestedAt: v.optional(v.number()),
+    enrichmentCompletedAt: v.optional(v.number()),
+    enrichmentError: v.optional(v.string()),
   }).index("by_linkedinUrl", ["linkedinUrl"]),
 
   candidates: defineTable({
@@ -101,7 +112,7 @@ export default defineSchema({
       v.literal("talk"),
       v.literal("community"),
       v.literal("employment"),
-      v.literal("network"),
+      v.literal("network")
     ),
     title: v.string(),
     snippet: v.string(),
@@ -122,7 +133,7 @@ export default defineSchema({
       v.literal("running"),
       v.literal("completed"),
       v.literal("fallback"),
-      v.literal("error"),
+      v.literal("error")
     ),
     rankingVersion: v.string(),
     promptVersion: v.string(),
@@ -169,8 +180,8 @@ export default defineSchema({
       v.literal("thumbs_up"),
       v.literal("thumbs_down"),
       v.literal("hide"),
-      v.literal("promote"),
+      v.literal("promote")
     ),
     note: v.optional(v.string()),
   }).index("by_scoreId", ["scoreId"]),
-});
+})

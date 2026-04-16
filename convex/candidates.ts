@@ -1,5 +1,5 @@
-import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { v } from "convex/values"
+import { internalMutation } from "./_generated/server"
 
 export const updateFromClay = internalMutation({
   args: {
@@ -16,23 +16,26 @@ export const updateFromClay = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const candidate = await ctx.db.get(args.candidateId);
-    if (!candidate) return null;
+    const candidate = await ctx.db.get(args.candidateId)
+    if (!candidate) return null
 
-    const person = await ctx.db.get(candidate.personId);
-    if (!person) return null;
+    const person = await ctx.db.get(candidate.personId)
+    if (!person) return null
 
-    const { candidateId: _cId, ...fields } = args; void _cId;
-    const patch: Record<string, unknown> = {};
+    const { candidateId: _cId, ...fields } = args
+    void _cId
+    const patch: Record<string, unknown> = {}
     for (const [k, val] of Object.entries(fields)) {
-      if (val !== undefined) patch[k] = val;
+      if (val !== undefined) patch[k] = val
     }
 
     if (Object.keys(patch).length > 0) {
-      patch.clayEnriched = true;
-      await ctx.db.patch(person._id, patch);
+      patch.clayEnriched = true
+      patch.enrichmentStatus = "complete"
+      patch.enrichmentCompletedAt = Date.now()
+      await ctx.db.patch(person._id, patch)
     }
 
-    return null;
+    return null
   },
-});
+})

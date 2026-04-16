@@ -1,7 +1,8 @@
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+import { query } from "./_generated/server"
+import { v } from "convex/values"
 
-import { deriveInfoSources } from "./lib/infoSources";
+import { deriveInfoSources } from "./lib/infoSources"
+import { getEffectiveEnrichmentStatus } from "./lib/enrichment"
 
 const requestStatusValidator = v.union(
   v.literal("pending"),
@@ -9,8 +10,8 @@ const requestStatusValidator = v.union(
   v.literal("enriching"),
   v.literal("ranking"),
   v.literal("ranked"),
-  v.literal("error"),
-);
+  v.literal("error")
+)
 
 const factorBreakdownValidator = v.object({
   roleFit: v.number(),
@@ -20,7 +21,14 @@ const factorBreakdownValidator = v.object({
   recency: v.number(),
   signalConfidence: v.number(),
   reachabilityBonus: v.number(),
-});
+})
+
+const enrichmentStatusValidator = v.union(
+  v.literal("ready"),
+  v.literal("queued"),
+  v.literal("complete"),
+  v.literal("failed")
+)
 
 const connectionChannelValidator = v.union(
   v.literal("github"),
@@ -29,8 +37,8 @@ const connectionChannelValidator = v.union(
   v.literal("conference"),
   v.literal("company"),
   v.literal("university"),
-  v.literal("oss"),
-);
+  v.literal("oss")
+)
 
 const networkConnectionReturnValidator = v.object({
   id: v.string(),
@@ -41,17 +49,17 @@ const networkConnectionReturnValidator = v.object({
     v.object({
       type: connectionChannelValidator,
       detail: v.string(),
-    }),
+    })
   ),
   strength: v.union(
     v.literal("strong"),
     v.literal("medium"),
-    v.literal("weak"),
+    v.literal("weak")
   ),
   lastInteraction: v.string(),
   sharedProjects: v.number(),
   relationship: v.string(),
-});
+})
 
 const resultRowValidator = v.object({
   scoreId: v.id("candidateScores"),
@@ -69,6 +77,7 @@ const resultRowValidator = v.object({
   stacks: v.array(v.string()),
   profileUrl: v.optional(v.string()),
   companyLogoUrl: v.optional(v.string()),
+  enrichmentStatus: enrichmentStatusValidator,
   infoSources: v.array(
     v.union(
       v.literal("linkedin"),
@@ -76,10 +85,10 @@ const resultRowValidator = v.object({
       v.literal("x"),
       v.literal("website"),
       v.literal("reddit"),
-      v.literal("youtube"),
-    ),
+      v.literal("youtube")
+    )
   ),
-});
+})
 
 export const getSearchResults = query({
   args: { requestId: v.optional(v.id("searchRequests")) },
@@ -95,49 +104,64 @@ export const getSearchResults = query({
       latestRankingRunId: v.optional(v.id("rankingRuns")),
       rankingNotes: v.optional(v.string()),
       errorMessage: v.optional(v.string()),
+      enrichmentSummary: v.object({
+        ready: v.number(),
+        queued: v.number(),
+        complete: v.number(),
+        failed: v.number(),
+      }),
       results: v.array(resultRowValidator),
     }),
-    v.null(),
+    v.null()
   ),
   handler: async (ctx, args) => {
     const request =
       args.requestId !== undefined
         ? await ctx.db.get(args.requestId)
-        : (
-            await ctx.db
-              .query("searchRequests")
-              .order("desc")
-              .take(1)
-          )[0] ?? null;
+        : ((await ctx.db.query("searchRequests").order("desc").take(1))[0] ??
+          null)
 
     if (!request) {
-      return null;
+      return null
     }
 
     const scores = await ctx.db
       .query("candidateScores")
       .withIndex("by_requestId_and_rank", (q) => q.eq("requestId", request._id))
-      .take(25);
+      .take(25)
 
-    const results = [];
+    const results = []
+    const enrichmentSummary = {
+      ready: 0,
+      queued: 0,
+      complete: 0,
+      failed: 0,
+    }
+
     for (const score of scores) {
-      const candidate = await ctx.db.get(score.candidateId);
-      if (!candidate) continue;
+      const candidate = await ctx.db.get(score.candidateId)
+      if (!candidate) continue
 
-      const person = await ctx.db.get(candidate.personId);
-      if (!person) continue;
+      const person = await ctx.db.get(candidate.personId)
+      if (!person) continue
+
+      const enrichmentStatus = getEffectiveEnrichmentStatus(person)
+      enrichmentSummary[enrichmentStatus] += 1
 
       const evidenceDocs = await ctx.db
         .query("candidateEvidence")
         .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
-        .take(20);
+        .take(20)
 
-      const infoSources = deriveInfoSources({
-        profileUrl: person.linkedinUrl,
-        socialGithub: person.socialGithub,
-        socialBlog: person.socialBlog,
-        socialTwitter: person.socialTwitter,
-      }, evidenceDocs);
+      const infoSources = deriveInfoSources(
+        {
+          profileUrl: person.linkedinUrl,
+          socialGithub: person.socialGithub,
+          socialBlog: person.socialBlog,
+          socialTwitter: person.socialTwitter,
+        },
+        evidenceDocs
+      )
 
       results.push({
         scoreId: score._id,
@@ -155,13 +179,14 @@ export const getSearchResults = query({
         stacks: person.stacks,
         profileUrl: person.linkedinUrl,
         companyLogoUrl: person.companyLogoUrl,
+        enrichmentStatus,
         infoSources,
-      });
+      })
     }
 
     const rankingRun = request.latestRankingRunId
       ? await ctx.db.get(request.latestRankingRunId)
-      : null;
+      : null
 
     return {
       requestId: request._id,
@@ -174,10 +199,11 @@ export const getSearchResults = query({
       latestRankingRunId: request.latestRankingRunId,
       rankingNotes: rankingRun?.notes,
       errorMessage: request.errorMessage,
+      enrichmentSummary,
       results,
-    };
+    }
   },
-});
+})
 
 export const getCandidateDossier = query({
   args: { scoreId: v.id("candidateScores") },
@@ -214,6 +240,7 @@ export const getCandidateDossier = query({
         socialBlog: v.optional(v.string()),
         socialTwitter: v.optional(v.string()),
         age: v.optional(v.number()),
+        enrichmentStatus: enrichmentStatusValidator,
       }),
       evidence: v.array(
         v.object({
@@ -225,7 +252,7 @@ export const getCandidateDossier = query({
             v.literal("talk"),
             v.literal("community"),
             v.literal("employment"),
-            v.literal("network"),
+            v.literal("network")
           ),
           snippet: v.string(),
           url: v.optional(v.string()),
@@ -233,27 +260,27 @@ export const getCandidateDossier = query({
           strength: v.number(),
           recencyYears: v.number(),
           relevanceDisplay: v.optional(v.string()),
-        }),
+        })
       ),
     }),
-    v.null(),
+    v.null()
   ),
   handler: async (ctx, args) => {
-    const score = await ctx.db.get(args.scoreId);
+    const score = await ctx.db.get(args.scoreId)
     if (!score) {
-      return null;
+      return null
     }
 
-    const candidate = await ctx.db.get(score.candidateId);
-    if (!candidate) return null;
+    const candidate = await ctx.db.get(score.candidateId)
+    if (!candidate) return null
 
-    const person = await ctx.db.get(candidate.personId);
-    if (!person) return null;
+    const person = await ctx.db.get(candidate.personId)
+    if (!person) return null
 
     const evidenceDocs = await ctx.db
       .query("candidateEvidence")
       .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
-      .take(200);
+      .take(200)
 
     const evidence = [...evidenceDocs]
       .sort((a, b) => b.strength - a.strength)
@@ -267,9 +294,10 @@ export const getCandidateDossier = query({
         strength: evidenceDoc.strength,
         recencyYears: evidenceDoc.recencyYears,
         relevanceDisplay: evidenceDoc.relevanceDisplay,
-      }));
+      }))
 
-    const avatarDisplayUrl = `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(candidate.slug)}`;
+    const avatarDisplayUrl = `https://api.dicebear.com/7.x/notionists/svg?seed=${encodeURIComponent(candidate.slug)}`
+    const enrichmentStatus = getEffectiveEnrichmentStatus(person)
 
     return {
       scoreId: score._id,
@@ -303,8 +331,9 @@ export const getCandidateDossier = query({
         socialBlog: person.socialBlog,
         socialTwitter: person.socialTwitter,
         age: candidate.age,
+        enrichmentStatus,
       },
       evidence,
-    };
+    }
   },
-});
+})

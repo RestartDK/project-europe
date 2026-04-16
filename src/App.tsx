@@ -17,20 +17,22 @@ export function App() {
   const [contextStep, setContextStep] = useState<1 | 2>(1)
   const [company, setCompany] = useState("")
   const [lookingFor, setLookingFor] = useState("")
-  const [activeRequestId, setActiveRequestId] = useState<Id<"searchRequests"> | null>(null)
-  const [selectedScoreId, setSelectedScoreId] = useState<Id<"candidateScores"> | null>(null)
+  const [activeRequestId, setActiveRequestId] =
+    useState<Id<"searchRequests"> | null>(null)
+  const [selectedScoreId, setSelectedScoreId] =
+    useState<Id<"candidateScores"> | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const extractSearchCriteria = useAction(api.intake.extractSearchCriteria)
 
   const searchResults = useQuery(
     api.ranking.getSearchResults,
-    activeRequestId ? { requestId: activeRequestId } : "skip",
+    activeRequestId ? { requestId: activeRequestId } : "skip"
   )
 
   const dossier = useQuery(
     api.ranking.getCandidateDossier,
-    selectedScoreId ? { scoreId: selectedScoreId } : "skip",
+    selectedScoreId ? { scoreId: selectedScoreId } : "skip"
   )
 
   const discoveryStatus = searchResults?.status ?? "pending"
@@ -50,7 +52,7 @@ export function App() {
   const effectiveContextError =
     submitError ??
     (screen === "discovery" && discoveryStatus === "error"
-      ? discoveryErrorMessage ?? "Ranking failed"
+      ? (discoveryErrorMessage ?? "Ranking failed")
       : null)
 
   const goToDiscovery = useCallback(async () => {
@@ -97,10 +99,16 @@ export function App() {
       return { label: "← back", onClick: () => setContextStep(1) } as const
     }
     if (effectiveScreen === "discovery") {
-      return { label: "← edit criteria", onClick: backFromDiscoveryWithError } as const
+      return {
+        label: "← edit criteria",
+        onClick: backFromDiscoveryWithError,
+      } as const
     }
     if (effectiveScreen === "results") {
-      return { label: "← edit criteria", onClick: backToCriteriaFromResults } as const
+      return {
+        label: "← edit criteria",
+        onClick: backToCriteriaFromResults,
+      } as const
     }
     if (effectiveScreen === "dossier") {
       return { label: "← back", onClick: () => setScreen("results") } as const
@@ -132,37 +140,36 @@ export function App() {
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col">
-      {effectiveScreen === "context" && (
-        <ContextScreen
-          step={effectiveContextStep}
-          onStepChange={setContextStep}
-          company={company}
-          onCompanyChange={setCompany}
-          lookingFor={lookingFor}
-          onLookingForChange={setLookingFor}
-          onStartDiscovery={goToDiscovery}
-          errorMessage={effectiveContextError}
-        />
-      )}
-      {effectiveScreen === "discovery" && (
-        <DiscoveryScreen
-          status={discoveryStatus}
-          errorMessage={discoveryErrorMessage}
-          rankingNotes={searchResults?.rankingNotes}
-        />
-      )}
-      {effectiveScreen === "results" && (
-        <ResultsScreen
-          results={searchResults?.results ?? []}
-          onSelectScore={(scoreId) => {
-            setSelectedScoreId(scoreId)
-            setScreen("dossier")
-          }}
-        />
-      )}
-      {effectiveScreen === "dossier" && (
-        <DossierScreen dossier={dossier} />
-      )}
+        {effectiveScreen === "context" && (
+          <ContextScreen
+            step={effectiveContextStep}
+            onStepChange={setContextStep}
+            company={company}
+            onCompanyChange={setCompany}
+            lookingFor={lookingFor}
+            onLookingForChange={setLookingFor}
+            onStartDiscovery={goToDiscovery}
+            errorMessage={effectiveContextError}
+          />
+        )}
+        {effectiveScreen === "discovery" && (
+          <DiscoveryScreen
+            status={discoveryStatus}
+            errorMessage={discoveryErrorMessage}
+            rankingNotes={searchResults?.rankingNotes}
+          />
+        )}
+        {effectiveScreen === "results" && (
+          <ResultsScreen
+            enrichmentSummary={searchResults?.enrichmentSummary}
+            results={searchResults?.results ?? []}
+            onSelectScore={(scoreId) => {
+              setSelectedScoreId(scoreId)
+              setScreen("dossier")
+            }}
+          />
+        )}
+        {effectiveScreen === "dossier" && <DossierScreen dossier={dossier} />}
       </main>
     </div>
   )
