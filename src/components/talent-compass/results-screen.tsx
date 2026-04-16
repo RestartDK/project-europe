@@ -1,5 +1,4 @@
 import type { Id } from "../../../convex/_generated/dataModel";
-import { motion } from "framer-motion";
 import type { FunctionReturnType } from "convex/server";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -93,12 +92,10 @@ function MatchBar({ score }: { score: number }) {
   );
 }
 
-const MotionTableRow = motion.create(TableRow);
-
 export function ResultsScreen({ onSelectScore, results }: Props) {
   return (
     <div className="mx-auto min-h-0 w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div>
         <header className="mb-5 text-left">
           <h2 className="font-heading text-xl font-bold text-foreground">discovery results</h2>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
@@ -120,12 +117,9 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map((r, i) => (
-                <MotionTableRow
+              {results.map((r) => (
+                <TableRow
                   key={r.scoreId}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03 }}
                   onClick={() => onSelectScore(r.scoreId)}
                   className={cn(rowCn, "group")}
                 >
@@ -176,12 +170,12 @@ export function ResultsScreen({ onSelectScore, results }: Props) {
                   <TableCell className="px-4 py-2.5">
                     <InfoSourceIcons sources={r.infoSources} />
                   </TableCell>
-                </MotionTableRow>
+                </TableRow>
               ))}
             </TableBody>
           </Table>
         </Card>
-      </motion.div>
+      </div>
     </div>
   );
 }

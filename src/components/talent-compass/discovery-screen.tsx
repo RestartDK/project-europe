@@ -40,34 +40,23 @@ export function DiscoveryScreen({ status, errorMessage, rankingNotes }: Props) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 pb-8 sm:px-6">
-      <div className="flex flex-1 flex-col items-center justify-center">
+      <div className="flex min-h-[min(320px,45svh)] flex-1 flex-col items-center justify-center">
         <Card className="w-full max-w-sm overflow-visible border-none bg-transparent py-0 shadow-none ring-0">
           <CardContent className="px-0">
-            <motion.div
-              className="w-full text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
+            <div className="w-full text-center">
               <motion.div
-                className="mx-auto mb-8 flex size-3 items-center justify-center"
-                animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
+                className="mx-auto mb-8 flex size-10 items-center justify-center"
+                animate={{ scale: [1, 1.08, 1], opacity: [0.55, 1, 0.55] }}
                 transition={{
                   duration: 1.5,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
               >
-                <Skeleton className="size-3 animate-none rounded-full bg-foreground/80" />
+                <Skeleton className="size-10 animate-none rounded-full bg-foreground/25" />
               </motion.div>
 
-              <motion.p
-                key={message}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mb-2 text-xs text-muted-foreground"
-              >
-                {message}
-              </motion.p>
+              <p className="mb-2 text-xs text-muted-foreground">{message}</p>
 
               {rankingNotes && status !== "error" && (
                 <p className="mb-6 text-[10px] leading-relaxed text-muted-foreground/70">
@@ -80,7 +69,7 @@ export function DiscoveryScreen({ status, errorMessage, rankingNotes }: Props) {
                   {errorMessage ?? "Ranking failed."}
                 </div>
               )}
-            </motion.div>
+            </div>
           </CardContent>
         </Card>
       </div>
