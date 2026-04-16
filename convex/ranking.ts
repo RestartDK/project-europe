@@ -132,7 +132,12 @@ export const getSearchResults = query({
         .withIndex("by_candidateId", (q) => q.eq("candidateId", candidate._id))
         .take(20);
 
-      const infoSources = deriveInfoSources(candidate, evidenceDocs);
+      const infoSources = deriveInfoSources({
+        profileUrl: person.linkedinUrl,
+        socialGithub: person.socialGithub,
+        socialBlog: person.socialBlog,
+        socialTwitter: person.socialTwitter,
+      }, evidenceDocs);
 
       results.push({
         scoreId: score._id,
