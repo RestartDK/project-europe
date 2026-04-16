@@ -48,6 +48,7 @@ const evidenceValidator = v.object({
 const candidateBundleValidator = v.array(
   v.object({
     candidateId: v.id("candidates"),
+    personId: v.id("people"),
     slug: v.string(),
     fullName: v.string(),
     headline: v.string(),
@@ -89,6 +90,7 @@ const rankingResultValidator = v.object({
 
 type CandidateBundle = {
   candidateId: Id<"candidates">;
+  personId: Id<"people">;
   slug: string;
   fullName: string;
   headline: string;
@@ -141,9 +143,9 @@ export const setSearchRequestStatus = internalMutation({
   args: {
     requestId: v.id("searchRequests"),
     status: v.union(
-      v.literal("ready_for_clay"),
-      v.literal("clay_queued"),
-      v.literal("importing_candidates"),
+      v.literal("pending"),
+      v.literal("searching"),
+      v.literal("enriching"),
       v.literal("ranking"),
       v.literal("ranked"),
       v.literal("error"),
@@ -168,33 +170,47 @@ export const seedStubCandidates = internalMutation({
   args: { requestId: v.id("searchRequests") },
   returns: v.object({ candidateCount: v.number() }),
   handler: async (ctx, args) => {
-    for (const candidate of candidateStubs) {
+    for (const stub of candidateStubs) {
+      const linkedinUrl = stub.profileUrl ?? `stub://${stub.slug}`;
+      let person = await ctx.db
+        .query("people")
+        .withIndex("by_linkedinUrl", (q) => q.eq("linkedinUrl", linkedinUrl))
+        .unique();
+
+      if (!person) {
+        const personId = await ctx.db.insert("people", {
+          linkedinUrl,
+          fullName: stub.fullName,
+          headline: stub.headline,
+          summary: stub.summary,
+          location: stub.location,
+          currentCompany: stub.currentCompany,
+          email: stub.email,
+          stacks: stub.stacks,
+          domains: stub.domains,
+          yearsExperience: stub.yearsExperience,
+          socialGithub: stub.socialGithub,
+          socialBlog: stub.socialBlog,
+          socialTwitter: stub.socialTwitter,
+          companyLogoUrl: stub.companyLogoUrl,
+          clayEnriched: false,
+        });
+        person = (await ctx.db.get(personId))!;
+      }
+
       const candidateId = await ctx.db.insert("candidates", {
         requestId: args.requestId,
-        slug: candidate.slug,
-        fullName: candidate.fullName,
-        headline: candidate.headline,
-        summary: candidate.summary,
-        location: candidate.location,
-        currentCompany: candidate.currentCompany,
-        profileUrl: candidate.profileUrl,
-        email: candidate.email,
-        warmIntroPath: candidate.warmIntroPath,
-        yearsExperience: candidate.yearsExperience,
-        seniority: candidate.seniority,
-        stacks: candidate.stacks,
-        domains: candidate.domains,
-        roleKeywords: candidate.roleKeywords,
-        signalConfidence: candidate.signalConfidence,
-        reachabilityScore: candidate.reachabilityScore,
-        networkConnections: candidate.networkConnections,
-        companyLogoUrl: candidate.companyLogoUrl,
-        socialGithub: candidate.socialGithub,
-        socialBlog: candidate.socialBlog,
-        socialTwitter: candidate.socialTwitter,
+        personId: person._id,
+        slug: stub.slug,
+        seniority: stub.seniority,
+        roleKeywords: stub.roleKeywords,
+        signalConfidence: stub.signalConfidence,
+        reachabilityScore: stub.reachabilityScore,
+        warmIntroPath: stub.warmIntroPath,
+        networkConnections: stub.networkConnections,
       });
 
-      for (const evidence of candidate.evidence) {
+      for (const evidence of stub.evidence) {
         await ctx.db.insert("candidateEvidence", {
           requestId: args.requestId,
           candidateId,
@@ -232,9 +248,9 @@ export const getRequestContext = internalQuery({
         companyContext: v.optional(v.string()),
         criteriaJson: v.string(),
         status: v.union(
-          v.literal("ready_for_clay"),
-          v.literal("clay_queued"),
-          v.literal("importing_candidates"),
+          v.literal("pending"),
+          v.literal("searching"),
+          v.literal("enriching"),
           v.literal("ranking"),
           v.literal("ranked"),
           v.literal("error"),
@@ -273,6 +289,9 @@ export const getCandidateBundle = internalQuery({
     const bundles: CandidateBundle[] = [];
 
     for (const candidate of candidates) {
+      const person = await ctx.db.get(candidate.personId);
+      if (!person) continue;
+
       const evidence = await ctx.db
         .query("candidateEvidence")
         .withIndex("by_requestId_and_candidateId", (q) =>
@@ -282,19 +301,20 @@ export const getCandidateBundle = internalQuery({
 
       bundles.push({
         candidateId: candidate._id,
+        personId: candidate.personId,
         slug: candidate.slug,
-        fullName: candidate.fullName,
-        headline: candidate.headline,
-        summary: candidate.summary,
-        location: candidate.location,
-        currentCompany: candidate.currentCompany,
-        profileUrl: candidate.profileUrl,
-        email: candidate.email,
+        fullName: person.fullName,
+        headline: person.headline ?? "",
+        summary: person.summary ?? "",
+        location: person.location,
+        currentCompany: person.currentCompany,
+        profileUrl: person.linkedinUrl,
+        email: person.email,
         warmIntroPath: candidate.warmIntroPath,
-        yearsExperience: candidate.yearsExperience,
+        yearsExperience: person.yearsExperience ?? 0,
         seniority: candidate.seniority,
-        stacks: candidate.stacks,
-        domains: candidate.domains,
+        stacks: person.stacks,
+        domains: person.domains,
         roleKeywords: candidate.roleKeywords,
         signalConfidence: candidate.signalConfidence,
         reachabilityScore: candidate.reachabilityScore,

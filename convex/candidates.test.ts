@@ -1,145 +1,86 @@
 /// <reference types="vite/client" />
-import { convexTest } from "convex-test"
-import { expect, test, describe } from "vitest"
-import { api, internal } from "./_generated/api"
-import type { Id } from "./_generated/dataModel"
-import schema from "./schema"
+import { convexTest } from "convex-test";
+import { expect, test, describe } from "vitest";
+import { internal } from "./_generated/api";
+import schema from "./schema";
 
-const modules = import.meta.glob("./**/*.ts")
+const modules = import.meta.glob("./**/*.ts");
 
-describe("createCandidate", () => {
-  test("creates an unenriched candidate doc", async () => {
-    const t = convexTest(schema, modules)
-    const searchId = await t.mutation(internal.searches.createSearch, {
-      query: "test",
-      pdlParams: {},
-    })
-    const candidateId = await t.mutation(internal.candidates.createCandidate, {
-      searchId,
-      name: "Alice Smith",
-      currentTitle: "Software Engineer",
-      currentCompany: "Acme Corp",
-      linkedinUrl: "https://linkedin.com/in/alice",
-      location: "Madrid, Spain",
-      pdlId: "pdl-123",
-    })
-    expect(candidateId).toBeDefined()
-    const candidates = await t.query(api.candidates.getCandidatesForSearch, {
-      searchId,
-    })
-    expect(candidates.length).toBe(1)
-    expect(candidates[0].name).toBe("Alice Smith")
-    expect(candidates[0].enriched).toBe(false)
-  })
-})
+async function setupTestData(t: ReturnType<typeof convexTest>) {
+  const requestId = await t.run(async (ctx) => {
+    return await ctx.db.insert("searchRequests", {
+      threadId: "test-thread",
+      rawPrompt: "test",
+      criteriaJson: "{}",
+      status: "ranked",
+      promptVersion: "v1",
+    });
+  });
+
+  const personId = await t.run(async (ctx) => {
+    return await ctx.db.insert("people", {
+      linkedinUrl: "https://linkedin.com/in/bob-jones",
+      fullName: "Bob Jones",
+      headline: "Engineer",
+      summary: "Engineer at Acme",
+      stacks: [],
+      domains: [],
+      yearsExperience: 5,
+      clayEnriched: false,
+    });
+  });
+
+  const candidateId = await t.run(async (ctx) => {
+    return await ctx.db.insert("candidates", {
+      requestId,
+      personId,
+      slug: "bob-jones",
+      seniority: "senior",
+      roleKeywords: [],
+      signalConfidence: 0.5,
+      reachabilityScore: 0.5,
+    });
+  });
+
+  return { requestId, personId, candidateId };
+}
 
 describe("updateFromClay", () => {
-  const insertTestCandidate = async (t: ReturnType<typeof convexTest>, requestId: Id<"searchRequests">) => {
-    return await t.run(async (ctx) => {
-      return await ctx.db.insert("candidates", {
-        requestId,
-        slug: "bob-jones",
-        fullName: "Bob Jones",
-        headline: "Engineer",
-        summary: "Engineer at Acme",
-        yearsExperience: 5,
-        seniority: "senior",
-        stacks: [],
-        domains: [],
-        roleKeywords: [],
-        signalConfidence: 50,
-        reachabilityScore: 50,
-      })
-    })
-  }
+  test("enriches the person record via candidate lookup", async () => {
+    const t = convexTest(schema, modules);
+    const { candidateId, personId } = await setupTestData(t);
 
-  test("enriches a candidate with Clay data", async () => {
-    const t = convexTest(schema, modules)
-    const requestId = await t.run(async (ctx) => {
-      return await ctx.db.insert("searchRequests", {
-        threadId: "test-thread",
-        rawPrompt: "test",
-        criteriaJson: "{}",
-        status: "ranked",
-        promptVersion: "v1",
-      })
-    })
-    const candidateId = await insertTestCandidate(t, requestId)
     await t.mutation(internal.candidates.updateFromClay, {
       candidateId,
       stacks: ["Python", "TypeScript"],
       socialGithub: "https://github.com/bob",
-    })
-    const candidate = await t.run(async (ctx) => {
-      return await ctx.db.get(candidateId)
-    })
-    expect(candidate).not.toBeNull()
-    expect(candidate!.stacks).toEqual(["Python", "TypeScript"])
-    expect(candidate!.socialGithub).toBe("https://github.com/bob")
-  })
+    });
+
+    const person = await t.run(async (ctx) => {
+      return await ctx.db.get(personId);
+    });
+    expect(person).not.toBeNull();
+    expect(person!.stacks).toEqual(["Python", "TypeScript"]);
+    expect(person!.socialGithub).toBe("https://github.com/bob");
+    expect(person!.clayEnriched).toBe(true);
+  });
 
   test("is idempotent — second call overwrites first", async () => {
-    const t = convexTest(schema, modules)
-    const requestId = await t.run(async (ctx) => {
-      return await ctx.db.insert("searchRequests", {
-        threadId: "test-thread",
-        rawPrompt: "test",
-        criteriaJson: "{}",
-        status: "ranked",
-        promptVersion: "v1",
-      })
-    })
-    const candidateId = await insertTestCandidate(t, requestId)
+    const t = convexTest(schema, modules);
+    const { candidateId, personId } = await setupTestData(t);
+
     await t.mutation(internal.candidates.updateFromClay, {
       candidateId,
       stacks: ["Go"],
-    })
+    });
     await t.mutation(internal.candidates.updateFromClay, {
       candidateId,
       stacks: ["Go", "Rust"],
-    })
-    const candidate = await t.run(async (ctx) => {
-      return await ctx.db.get(candidateId)
-    })
-    expect(candidate!.stacks).toEqual(["Go", "Rust"])
-  })
-})
+    });
 
-describe("getCandidatesForSearch", () => {
-  test("returns empty array when no candidates", async () => {
-    const t = convexTest(schema, modules)
-    const searchId = await t.mutation(internal.searches.createSearch, {
-      query: "test",
-      pdlParams: {},
-    })
-    const candidates = await t.query(api.candidates.getCandidatesForSearch, {
-      searchId,
-    })
-    expect(candidates).toEqual([])
-  })
-
-  test("returns candidates for correct search only", async () => {
-    const t = convexTest(schema, modules)
-    const search1 = await t.mutation(internal.searches.createSearch, {
-      query: "search 1",
-      pdlParams: {},
-    })
-    const search2 = await t.mutation(internal.searches.createSearch, {
-      query: "search 2",
-      pdlParams: {},
-    })
-    await t.mutation(internal.candidates.createCandidate, {
-      searchId: search1,
-      name: "Candidate for search 1",
-    })
-    await t.mutation(internal.candidates.createCandidate, {
-      searchId: search2,
-      name: "Candidate for search 2",
-    })
-    const results1 = await t.query(api.candidates.getCandidatesForSearch, {
-      searchId: search1,
-    })
-    expect(results1.length).toBe(1)
-    expect(results1[0].name).toBe("Candidate for search 1")
-  })
-})
+    const person = await t.run(async (ctx) => {
+      return await ctx.db.get(personId);
+    });
+    expect(person!.stacks).toEqual(["Go", "Rust"]);
+  });
+});

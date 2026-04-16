@@ -39,11 +39,11 @@ export default defineSchema({
     companyContext: v.optional(v.string()),
     criteriaJson: v.string(),
     status: v.union(
-      v.literal("ready_for_clay"),
-      v.literal("clay_queued"),
-      v.literal("importing_candidates"),
+      v.literal("pending"),
+      v.literal("searching"),
       v.literal("ranking"),
       v.literal("ranked"),
+      v.literal("enriching"),
       v.literal("error"),
     ),
     promptVersion: v.string(),
@@ -54,32 +54,41 @@ export default defineSchema({
     .index("by_threadId", ["threadId"])
     .index("by_status", ["status"]),
 
-  candidates: defineTable({
-    requestId: v.id("searchRequests"),
-    slug: v.string(),
+  people: defineTable({
+    linkedinUrl: v.string(),
     fullName: v.string(),
-    headline: v.string(),
-    summary: v.string(),
+    headline: v.optional(v.string()),
+    summary: v.optional(v.string()),
     location: v.optional(v.string()),
     currentCompany: v.optional(v.string()),
-    profileUrl: v.optional(v.string()),
     email: v.optional(v.string()),
-    warmIntroPath: v.optional(v.string()),
-    yearsExperience: v.number(),
-    seniority: v.string(),
     stacks: v.array(v.string()),
     domains: v.array(v.string()),
+    yearsExperience: v.optional(v.number()),
+    socialGithub: v.optional(v.string()),
+    socialTwitter: v.optional(v.string()),
+    socialBlog: v.optional(v.string()),
+    companyLogoUrl: v.optional(v.string()),
+    pdlId: v.optional(v.string()),
+    pdlData: v.optional(v.any()),
+    clayEnriched: v.boolean(),
+  }).index("by_linkedinUrl", ["linkedinUrl"]),
+
+  candidates: defineTable({
+    requestId: v.id("searchRequests"),
+    personId: v.id("people"),
+    slug: v.string(),
+    seniority: v.string(),
     roleKeywords: v.array(v.string()),
     signalConfidence: v.number(),
     reachabilityScore: v.number(),
+    warmIntroPath: v.optional(v.string()),
     networkConnections: v.optional(v.array(networkConnectionValidator)),
-    companyLogoUrl: v.optional(v.string()),
-    socialGithub: v.optional(v.string()),
-    socialBlog: v.optional(v.string()),
-    socialTwitter: v.optional(v.string()),
+    pdlScore: v.optional(v.number()),
   })
     .index("by_requestId", ["requestId"])
-    .index("by_requestId_and_slug", ["requestId", "slug"]),
+    .index("by_requestId_and_slug", ["requestId", "slug"])
+    .index("by_personId", ["personId"]),
 
   candidateEvidence: defineTable({
     requestId: v.id("searchRequests"),
@@ -162,43 +171,4 @@ export default defineSchema({
     ),
     note: v.optional(v.string()),
   }).index("by_scoreId", ["scoreId"]),
-
-  searches: defineTable({
-    query: v.string(),
-    company: v.optional(v.string()),
-    lookingFor: v.optional(v.string()),
-    chips: v.optional(v.array(v.string())),
-    apolloParams: v.optional(v.any()),
-    pdlParams: v.optional(v.any()),
-    status: v.union(
-      v.literal("searching"),
-      v.literal("enriching"),
-      v.literal("complete"),
-      v.literal("error"),
-    ),
-    candidateCount: v.number(),
-    createdAt: v.number(),
-  }),
-
-  talentCandidates: defineTable({
-    searchId: v.id("searches"),
-    name: v.string(),
-    currentTitle: v.optional(v.string()),
-    currentCompany: v.optional(v.string()),
-    linkedinUrl: v.optional(v.string()),
-    location: v.optional(v.string()),
-    apolloId: v.optional(v.string()),
-    pdlId: v.optional(v.string()),
-    pdlScore: v.optional(v.number()),
-    enriched: v.boolean(),
-    enrichedAt: v.optional(v.number()),
-    skills: v.optional(v.array(v.string())),
-    accomplishmentSummary: v.optional(v.string()),
-    movabilityScore: v.optional(v.number()),
-    movabilityReason: v.optional(v.string()),
-    githubUrl: v.optional(v.string()),
-    rawClayData: v.optional(v.any()),
-  })
-    .index("by_searchId", ["searchId"])
-    .index("by_linkedinUrl", ["linkedinUrl"]),
 });

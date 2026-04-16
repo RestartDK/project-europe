@@ -7,9 +7,9 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type RankingStatus =
-  | "ready_for_clay"
-  | "clay_queued"
-  | "importing_candidates"
+  | "pending"
+  | "searching"
+  | "enriching"
   | "ranking"
   | "ranked"
   | "error"
@@ -23,12 +23,12 @@ type Props = {
 
 function statusCopy(status: RankingStatus) {
   switch (status) {
-    case "ready_for_clay":
-      return "preparing candidate search…"
-    case "clay_queued":
-      return "queueing candidate import…"
-    case "importing_candidates":
-      return "importing candidates…"
+    case "pending":
+      return "preparing search…"
+    case "searching":
+      return "searching for candidates…"
+    case "enriching":
+      return "enriching candidate data…"
     case "ranking":
       return "ranking candidates…"
     case "ranked":
@@ -40,11 +40,11 @@ function statusCopy(status: RankingStatus) {
 
 function statusProgress(status: RankingStatus) {
   switch (status) {
-    case "ready_for_clay":
+    case "pending":
       return 18
-    case "clay_queued":
+    case "searching":
       return 35
-    case "importing_candidates":
+    case "enriching":
       return 62
     case "ranking":
       return 88

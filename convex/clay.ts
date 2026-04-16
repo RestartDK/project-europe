@@ -1,24 +1,36 @@
 import { internal } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import { internalAction, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 
-/* ── Push candidates to Clay webhook ────────────────────────────── */
-
-export const getAllCandidates = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("candidates").take(500);
-  },
-});
-
-export const getCandidatesByRequest = internalQuery({
-  args: { requestId: v.id("searchRequests") },
+export const getCandidatesWithPeople = internalQuery({
+  args: { requestId: v.optional(v.id("searchRequests")) },
+  returns: v.array(
+    v.object({
+      candidateId: v.id("candidates"),
+      linkedinUrl: v.string(),
+    }),
+  ),
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("candidates")
-      .withIndex("by_requestId", (q) => q.eq("requestId", args.requestId))
-      .take(500);
+    const candidates = args.requestId
+      ? await ctx.db
+          .query("candidates")
+          .withIndex("by_requestId", (q) => q.eq("requestId", args.requestId!))
+          .take(500)
+      : await ctx.db.query("candidates").take(500);
+
+    const results: { candidateId: Id<"candidates">; linkedinUrl: string }[] = [];
+
+    for (const c of candidates) {
+      const person = await ctx.db.get(c.personId);
+      if (!person) continue;
+      results.push({
+        candidateId: c._id,
+        linkedinUrl: person.linkedinUrl,
+      });
+    }
+
+    return results;
   },
 });
 
@@ -33,11 +45,9 @@ export const pushCandidatesToClay = internalAction({
       throw new Error("CLAY_WEBHOOK_URL environment variable is not set");
     }
 
-    const candidates: Doc<"candidates">[] = args.requestId
-      ? await ctx.runQuery(internal.clay.getCandidatesByRequest, {
-          requestId: args.requestId,
-        })
-      : await ctx.runQuery(internal.clay.getAllCandidates, {});
+    const candidates = await ctx.runQuery(internal.clay.getCandidatesWithPeople, {
+      requestId: args.requestId,
+    });
 
     if (candidates.length === 0) {
       console.log("[clay:push] no candidates found");
@@ -49,8 +59,8 @@ export const pushCandidatesToClay = internalAction({
 
     for (const c of candidates) {
       const row = {
-        convex_candidate_id: c._id,
-        linkedin_url: c.profileUrl ?? null,
+        convex_candidate_id: c.candidateId,
+        linkedin_url: c.linkedinUrl,
       };
 
       const response = await fetch(webhookUrl, {
@@ -63,8 +73,12 @@ export const pushCandidatesToClay = internalAction({
         sent++;
       } else {
         const body = await response.text();
-        errors.push(`${c._id}: ${response.status} — ${body}`);
-        console.log("[clay:push] failed for candidate", { id: c._id, status: response.status, body });
+        errors.push(`${c.candidateId}: ${response.status} — ${body}`);
+        console.log("[clay:push] failed for candidate", {
+          id: c.candidateId,
+          status: response.status,
+          body,
+        });
       }
     }
 

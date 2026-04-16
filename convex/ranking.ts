@@ -4,9 +4,9 @@ import { v } from "convex/values";
 import { computeSignalColumns } from "./lib/signals";
 
 const requestStatusValidator = v.union(
-  v.literal("ready_for_clay"),
-  v.literal("clay_queued"),
-  v.literal("importing_candidates"),
+  v.literal("pending"),
+  v.literal("searching"),
+  v.literal("enriching"),
   v.literal("ranking"),
   v.literal("ranked"),
   v.literal("error"),
@@ -123,9 +123,10 @@ export const getSearchResults = query({
     const results = [];
     for (const score of scores) {
       const candidate = await ctx.db.get(score.candidateId);
-      if (!candidate) {
-        continue;
-      }
+      if (!candidate) continue;
+
+      const person = await ctx.db.get(candidate.personId);
+      if (!person) continue;
 
       const evidenceDocs = await ctx.db
         .query("candidateEvidence")
@@ -146,13 +147,13 @@ export const getSearchResults = query({
         confidence: score.confidence,
         summaryWhy: score.summaryWhy,
         slug: candidate.slug,
-        fullName: candidate.fullName,
-        headline: candidate.headline,
-        currentCompany: candidate.currentCompany,
-        location: candidate.location,
-        stacks: candidate.stacks,
-        profileUrl: candidate.profileUrl,
-        companyLogoUrl: candidate.companyLogoUrl,
+        fullName: person.fullName,
+        headline: person.headline ?? "",
+        currentCompany: person.currentCompany,
+        location: person.location,
+        stacks: person.stacks,
+        profileUrl: person.linkedinUrl,
+        companyLogoUrl: person.companyLogoUrl,
         githubSignal: signalCols.githubSignal,
         blogSignal: signalCols.blogSignal,
         networkProximity: signalCols.networkProximity,
@@ -251,9 +252,10 @@ export const getCandidateDossier = query({
     }
 
     const candidate = await ctx.db.get(score.candidateId);
-    if (!candidate) {
-      return null;
-    }
+    if (!candidate) return null;
+
+    const person = await ctx.db.get(candidate.personId);
+    if (!person) return null;
 
     const evidence = [];
     for (const evidenceId of score.evidenceRefIds) {
@@ -295,23 +297,23 @@ export const getCandidateDossier = query({
       networkConnections: candidate.networkConnections ?? [],
       candidate: {
         slug: candidate.slug,
-        fullName: candidate.fullName,
-        headline: candidate.headline,
-        summary: candidate.summary,
-        currentCompany: candidate.currentCompany,
-        location: candidate.location,
-        profileUrl: candidate.profileUrl,
-        email: candidate.email,
+        fullName: person.fullName,
+        headline: person.headline ?? "",
+        summary: person.summary ?? "",
+        currentCompany: person.currentCompany,
+        location: person.location,
+        profileUrl: person.linkedinUrl,
+        email: person.email,
         warmIntroPath: candidate.warmIntroPath,
-        yearsExperience: candidate.yearsExperience,
+        yearsExperience: person.yearsExperience ?? 0,
         seniority: candidate.seniority,
-        stacks: candidate.stacks,
-        domains: candidate.domains,
+        stacks: person.stacks,
+        domains: person.domains,
         avatarDisplayUrl,
-        companyLogoUrl: candidate.companyLogoUrl,
-        socialGithub: candidate.socialGithub,
-        socialBlog: candidate.socialBlog,
-        socialTwitter: candidate.socialTwitter,
+        companyLogoUrl: person.companyLogoUrl,
+        socialGithub: person.socialGithub,
+        socialBlog: person.socialBlog,
+        socialTwitter: person.socialTwitter,
       },
       evidence,
       feedback: feedbackDocs.map((item) => ({
