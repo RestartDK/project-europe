@@ -26,6 +26,7 @@ export type CandidateEvidenceStub = {
   strength: number;
   recencyYears: number;
   tags: string[];
+  relevanceDisplay?: string;
 };
 
 export type NetworkConnectionStub = {
@@ -73,6 +74,7 @@ export type CandidateStub = {
   socialGithub?: string;
   socialBlog?: string;
   socialTwitter?: string;
+  age?: number;
 };
 
 export type FactorBreakdown = {

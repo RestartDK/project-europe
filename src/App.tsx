@@ -1,4 +1,4 @@
-import { useAction, useMutation, useQuery } from "convex/react"
+import { useAction, useQuery } from "convex/react"
 import { useCallback, useMemo, useState } from "react"
 
 import { ContextScreen } from "@/components/talent-compass/context-screen"
@@ -6,6 +6,7 @@ import { DiscoveryScreen } from "@/components/talent-compass/discovery-screen"
 import { DossierScreen } from "@/components/talent-compass/dossier-screen"
 import { ResultsScreen } from "@/components/talent-compass/results-screen"
 import { TalentThemeToggle } from "@/components/talent-compass/theme-toggle"
+import { Button } from "@/components/ui/button"
 import { api } from "../convex/_generated/api"
 import type { Id } from "../convex/_generated/dataModel"
 
@@ -16,13 +17,11 @@ export function App() {
   const [contextStep, setContextStep] = useState<1 | 2>(1)
   const [company, setCompany] = useState("")
   const [lookingFor, setLookingFor] = useState("")
-  const [selectedChips, setSelectedChips] = useState<Set<string>>(new Set())
   const [activeRequestId, setActiveRequestId] = useState<Id<"searchRequests"> | null>(null)
   const [selectedScoreId, setSelectedScoreId] = useState<Id<"candidateScores"> | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const extractSearchCriteria = useAction(api.intake.extractSearchCriteria)
-  const submitFeedback = useMutation(api.ranking.submitFeedback)
 
   const searchResults = useQuery(
     api.ranking.getSearchResults,
@@ -54,30 +53,11 @@ export function App() {
       ? discoveryErrorMessage ?? "Ranking failed"
       : null)
 
-  const composedPrompt = useMemo(() => {
-    const chips = Array.from(selectedChips)
-    const chipsSuffix =
-      chips.length > 0 ? `\n\nConstraints:\n- ${chips.join("\n- ")}` : ""
-    return `${lookingFor.trim()}${chipsSuffix}`.trim()
-  }, [lookingFor, selectedChips])
-
-  const toggleChip = useCallback((q: string) => {
-    setSelectedChips((prev) => {
-      const next = new Set(prev)
-      if (next.has(q)) {
-        next.delete(q)
-      } else {
-        next.add(q)
-      }
-      return next
-    })
-  }, [])
-
   const goToDiscovery = useCallback(async () => {
     setSubmitError(null)
     setSelectedScoreId(null)
 
-    const prompt = composedPrompt
+    const prompt = lookingFor.trim()
     if (!prompt) {
       return
     }
@@ -95,7 +75,7 @@ export function App() {
       setScreen("context")
       setContextStep(2)
     }
-  }, [company, composedPrompt, extractSearchCriteria])
+  }, [company, lookingFor, extractSearchCriteria])
 
   const backFromDiscovery = useCallback(() => {
     setScreen("context")
@@ -107,21 +87,51 @@ export function App() {
     setContextStep(2)
   }, [])
 
-  const onFeedback = useCallback(
-    async (disposition: "thumbs_up" | "thumbs_down" | "promote" | "hide") => {
-      if (!activeRequestId || !dossier) return
-      await submitFeedback({
-        requestId: activeRequestId,
-        scoreId: dossier.scoreId,
-        disposition,
-      })
-    },
-    [activeRequestId, dossier, submitFeedback],
-  )
+  const backFromDiscoveryWithError = useCallback(() => {
+    setSubmitError(searchResults?.errorMessage ?? submitError)
+    backFromDiscovery()
+  }, [backFromDiscovery, searchResults?.errorMessage, submitError])
+
+  const headerBack = useMemo(() => {
+    if (effectiveScreen === "context" && effectiveContextStep === 2) {
+      return { label: "← back", onClick: () => setContextStep(1) } as const
+    }
+    if (effectiveScreen === "discovery") {
+      return { label: "← edit criteria", onClick: backFromDiscoveryWithError } as const
+    }
+    if (effectiveScreen === "results") {
+      return { label: "← edit criteria", onClick: backToCriteriaFromResults } as const
+    }
+    if (effectiveScreen === "dossier") {
+      return { label: "← back", onClick: () => setScreen("results") } as const
+    }
+    return null
+  }, [
+    backFromDiscoveryWithError,
+    backToCriteriaFromResults,
+    effectiveContextStep,
+    effectiveScreen,
+  ])
 
   return (
-    <div className="min-h-svh bg-background">
-      <TalentThemeToggle />
+    <div className="flex min-h-svh flex-col bg-background">
+      <header className="flex h-14 shrink-0 items-center justify-between gap-3 px-4 sm:h-16 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center">
+          {headerBack ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 justify-start rounded-full px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={headerBack.onClick}
+            >
+              {headerBack.label}
+            </Button>
+          ) : null}
+        </div>
+        <TalentThemeToggle />
+      </header>
+
+      <main className="flex min-h-0 flex-1 flex-col">
       {effectiveScreen === "context" && (
         <ContextScreen
           step={effectiveContextStep}
@@ -130,18 +140,12 @@ export function App() {
           onCompanyChange={setCompany}
           lookingFor={lookingFor}
           onLookingForChange={setLookingFor}
-          selectedChips={selectedChips}
-          onToggleChip={toggleChip}
           onStartDiscovery={goToDiscovery}
           errorMessage={effectiveContextError}
         />
       )}
       {effectiveScreen === "discovery" && (
         <DiscoveryScreen
-          onBack={() => {
-            setSubmitError(searchResults?.errorMessage ?? submitError)
-            backFromDiscovery()
-          }}
           status={discoveryStatus}
           errorMessage={discoveryErrorMessage}
           rankingNotes={searchResults?.rankingNotes}
@@ -149,7 +153,6 @@ export function App() {
       )}
       {effectiveScreen === "results" && (
         <ResultsScreen
-          onEditCriteria={backToCriteriaFromResults}
           results={searchResults?.results ?? []}
           onSelectScore={(scoreId) => {
             setSelectedScoreId(scoreId)
@@ -158,12 +161,9 @@ export function App() {
         />
       )}
       {effectiveScreen === "dossier" && (
-        <DossierScreen
-          dossier={dossier}
-          onBack={() => setScreen("results")}
-          onFeedback={onFeedback}
-        />
+        <DossierScreen dossier={dossier} />
       )}
+      </main>
     </div>
   )
 }
