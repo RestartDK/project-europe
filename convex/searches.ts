@@ -4,17 +4,18 @@ import { internalMutation, query } from "./_generated/server"
 export const createSearch = internalMutation({
   args: {
     query: v.string(),
-    apolloParams: v.object({
-      titles: v.array(v.string()),
-      locations: v.array(v.string()),
-      keywords: v.string(),
-      skills: v.array(v.string()),
-    }),
+    company: v.optional(v.string()),
+    lookingFor: v.optional(v.string()),
+    chips: v.optional(v.array(v.string())),
+    pdlParams: v.any(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("searches", {
       query: args.query,
-      apolloParams: args.apolloParams,
+      company: args.company,
+      lookingFor: args.lookingFor,
+      chips: args.chips,
+      pdlParams: args.pdlParams,
       status: "searching",
       candidateCount: 0,
       createdAt: Date.now(),

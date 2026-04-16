@@ -11,7 +11,7 @@ describe("POST /clay-webhook", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const candidateId = await t.mutation(internal.candidates.createCandidate, {
       searchId,
@@ -62,7 +62,7 @@ describe("POST /clay-webhook", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     await t.mutation(internal.candidates.createCandidate, {
       searchId,

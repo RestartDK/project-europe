@@ -11,12 +11,7 @@ describe("createSearch", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "Python engineer in Madrid",
-      apolloParams: {
-        titles: ["Software Engineer"],
-        locations: ["Madrid, Spain"],
-        keywords: "Python",
-        skills: ["Python"],
-      },
+      pdlParams: { jobTitleRole: "engineering", jobTitleSubRoles: [], jobTitleLevels: [], requiredSkills: ["python"], preferredSkills: [], minYearsExperience: null, countries: [], localities: [] },
     })
     expect(searchId).toBeDefined()
     const search = await t.query(api.searches.getSearch, { searchId })
@@ -32,11 +27,11 @@ describe("listSearches", () => {
     const t = convexTest(schema, modules)
     await t.mutation(internal.searches.createSearch, {
       query: "First search",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     await t.mutation(internal.searches.createSearch, {
       query: "Second search",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const searches = await t.query(api.searches.listSearches)
     expect(searches.length).toBe(2)
@@ -56,7 +51,7 @@ describe("getSearch", () => {
     // we just verify it returns null without throwing
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "temp",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const search = await t.query(api.searches.getSearch, { searchId })
     expect(search).not.toBeNull()
@@ -68,7 +63,7 @@ describe("updateSearchStatus", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     await t.mutation(internal.searches.updateSearchStatus, {
       searchId,
@@ -84,7 +79,7 @@ describe("updateSearchStatus", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "very niche query",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     await t.mutation(internal.searches.updateSearchStatus, {
       searchId,

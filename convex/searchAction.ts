@@ -127,7 +127,7 @@ export const search = action({
     // 2. Create search doc
     const searchId: Id<"searches"> = await ctx.runMutation(
       internal.searches.createSearch,
-      { query: args.query, apolloParams },
+      { query: args.query, pdlParams: apolloParams },
     )
 
     try {
@@ -154,7 +154,6 @@ export const search = action({
             currentCompany: person.organization_name || undefined,
             linkedinUrl: person.linkedin_url || undefined,
             location: [person.city, person.country].filter(Boolean).join(", ") || undefined,
-            apolloId: person.id || undefined,
           },
         )
 

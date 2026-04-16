@@ -193,4 +193,111 @@ http.route({
   }),
 });
 
+// ---------------------------------------------------------------------------
+// Title inference helpers for /pool-ingest
+// ---------------------------------------------------------------------------
+
+function str(v: unknown): string | undefined {
+  return typeof v === "string" && v.trim() ? v.trim() : undefined
+}
+
+const LEVEL_PATTERNS: Array<[RegExp, string]> = [
+  [/\b(staff|principal)\b/i, "senior"],
+  [/\bsenior\b/i, "senior"],
+  [/\bjunior\b/i, "entry"],
+  [/\b(intern|trainee|apprentice)\b/i, "training"],
+  [/\b(vp|vice president)\b/i, "vp"],
+  [/\bdirector\b/i, "director"],
+  [/\bmanager\b/i, "manager"],
+  [/\b(cto|ceo|coo|cpo|chief)\b/i, "cxo"],
+]
+function inferLevels(title: string): string[] | undefined {
+  for (const [re, level] of LEVEL_PATTERNS) if (re.test(title)) return [level]
+  return undefined
+}
+const SUBROLE_PATTERNS: Array<[RegExp, string]> = [
+  [/\bfrontend\b|\bfront-end\b/i, "frontend"],
+  [/\bbackend\b|\bback-end\b/i, "backend"],
+  [/\bfull.?stack\b/i, "full stack"],
+  [/\bdevops\b|\bsre\b/i, "devops"],
+  [/\bmachine learning\b|\bml engineer\b/i, "machine learning"],
+  [/\bdata engineer\b/i, "data"],
+  [/\bmobile\b|\bios\b|\bandroid\b/i, "mobile"],
+  [/\bsecurity\b/i, "security"],
+  [/\b(platform|infrastructure|infra)\b/i, "platform"],
+]
+function inferSubRole(title: string): string {
+  for (const [re, role] of SUBROLE_PATTERNS) if (re.test(title)) return role
+  return "software"
+}
+function inferRole(title: string): string {
+  if (/\b(engineer|developer|programmer|architect|devops|sre)\b/i.test(title)) return "engineering"
+  if (/\bdesigner?\b/i.test(title)) return "design"
+  if (/\bproduct\b/i.test(title)) return "product"
+  return "engineering"
+}
+
+// POST /pool-ingest — one Clay row at a time
+http.route({
+  path: "/pool-ingest",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    let body: unknown
+    try { body = await req.json() } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: { "Content-Type": "application/json" } })
+    }
+    const d = body as Record<string, unknown>
+    const name = str(d.name)
+    if (!name) return new Response(JSON.stringify({ error: "name is required" }), { status: 400, headers: { "Content-Type": "application/json" } })
+    const title = str(d.title) ?? ""
+    await ctx.runMutation(internal.candidatePool.insertBatch, {
+      people: [{ name, currentTitle: title || undefined, currentCompany: str(d.company), location: str(d.location), linkedinUrl: str(d.linkedin), jobTitleLevels: inferLevels(title), jobTitleSubRole: inferSubRole(title), jobTitleRole: inferRole(title) }],
+    })
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } })
+  }),
+})
+
+// POST /import-pool — bulk import JSON array
+http.route({
+  path: "/import-pool",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    let body: unknown
+    try { body = await req.json() } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: { "Content-Type": "application/json" } })
+    }
+    const data = body as Record<string, unknown>
+    const people = data.people
+    if (!Array.isArray(people)) return new Response(JSON.stringify({ error: "Expected { people: [...] }" }), { status: 400, headers: { "Content-Type": "application/json" } })
+    if (data.replace === true) await ctx.runMutation(internal.candidatePool.clearPool)
+    let inserted = 0
+    for (let i = 0; i < people.length; i += 50) {
+      const batch = (people.slice(i, i + 50) as Array<Record<string, unknown>>).map((p) => ({
+        name: String(p.name ?? "Unknown"),
+        linkedinUrl: p.linkedinUrl != null ? String(p.linkedinUrl) : undefined,
+        currentTitle: p.currentTitle != null ? String(p.currentTitle) : undefined,
+        currentCompany: p.currentCompany != null ? String(p.currentCompany) : undefined,
+        location: p.location != null ? String(p.location) : undefined,
+        skills: Array.isArray(p.skills) ? (p.skills as string[]) : undefined,
+        jobTitleLevels: Array.isArray(p.jobTitleLevels) ? (p.jobTitleLevels as string[]) : undefined,
+        jobTitleSubRole: p.jobTitleSubRole != null ? String(p.jobTitleSubRole) : undefined,
+        jobTitleRole: p.jobTitleRole != null ? String(p.jobTitleRole) : undefined,
+        githubUrl: p.githubUrl != null ? String(p.githubUrl) : undefined,
+      }))
+      inserted += await ctx.runMutation(internal.candidatePool.insertBatch, { people: batch })
+    }
+    return new Response(JSON.stringify({ ok: true, inserted }), { status: 200, headers: { "Content-Type": "application/json" } })
+  }),
+})
+
+// DELETE /import-pool — wipe the pool
+http.route({
+  path: "/import-pool",
+  method: "DELETE",
+  handler: httpAction(async (ctx) => {
+    const deleted = await ctx.runMutation(internal.candidatePool.clearPool)
+    return new Response(JSON.stringify({ ok: true, deleted }), { status: 200, headers: { "Content-Type": "application/json" } })
+  }),
+})
+
 export default http;

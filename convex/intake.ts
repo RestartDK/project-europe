@@ -117,7 +117,7 @@ export const extractSearchCriteria = action({
       promptVersion,
     });
 
-    await ctx.runAction(internal.intake.enqueueClayStub, { requestId });
+    await ctx.scheduler.runAfter(0, internal.intake.enqueueClayStub, { requestId });
 
     console.log("[intake] search request saved, enqueueing Clay stub pipeline", {
       requestId,

@@ -153,14 +153,39 @@ export default defineSchema({
     .index("by_rankingRunId_and_rank", ["rankingRunId", "rank"])
     .index("by_candidateId", ["candidateId"]),
 
+  rankingFeedback: defineTable({
+    requestId: v.id("searchRequests"),
+    scoreId: v.id("candidateScores"),
+    disposition: v.union(
+      v.literal("thumbs_up"),
+      v.literal("thumbs_down"),
+      v.literal("hide"),
+      v.literal("promote"),
+    ),
+    note: v.optional(v.string()),
+  }).index("by_scoreId", ["scoreId"]),
+
+  candidatePool: defineTable({
+    name: v.string(),
+    linkedinUrl: v.optional(v.string()),
+    currentTitle: v.optional(v.string()),
+    currentCompany: v.optional(v.string()),
+    location: v.optional(v.string()),
+    skills: v.optional(v.array(v.string())),
+    jobTitleLevels: v.optional(v.array(v.string())),
+    jobTitleSubRole: v.optional(v.string()),
+    jobTitleRole: v.optional(v.string()),
+    githubUrl: v.optional(v.string()),
+    importedAt: v.number(),
+  }).index("by_linkedinUrl", ["linkedinUrl"]),
+
   searches: defineTable({
     query: v.string(),
-    apolloParams: v.object({
-      titles: v.array(v.string()),
-      locations: v.array(v.string()),
-      keywords: v.string(),
-      skills: v.array(v.string()),
-    }),
+    company: v.optional(v.string()),
+    lookingFor: v.optional(v.string()),
+    chips: v.optional(v.array(v.string())),
+    apolloParams: v.optional(v.any()),
+    pdlParams: v.optional(v.any()),
     status: v.union(
       v.literal("searching"),
       v.literal("enriching"),
@@ -179,6 +204,8 @@ export default defineSchema({
     linkedinUrl: v.optional(v.string()),
     location: v.optional(v.string()),
     apolloId: v.optional(v.string()),
+    pdlId: v.optional(v.string()),
+    pdlScore: v.optional(v.number()),
     enriched: v.boolean(),
     enrichedAt: v.optional(v.number()),
     skills: v.optional(v.array(v.string())),

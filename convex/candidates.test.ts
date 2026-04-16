@@ -11,7 +11,7 @@ describe("createCandidate", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const candidateId = await t.mutation(internal.candidates.createCandidate, {
       searchId,
@@ -20,7 +20,7 @@ describe("createCandidate", () => {
       currentCompany: "Acme Corp",
       linkedinUrl: "https://linkedin.com/in/alice",
       location: "Madrid, Spain",
-      apolloId: "apollo-123",
+      pdlId: "pdl-123",
     })
     expect(candidateId).toBeDefined()
     const candidates = await t.query(api.candidates.getCandidatesForSearch, {
@@ -37,7 +37,7 @@ describe("updateFromClay", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const candidateId = await t.mutation(internal.candidates.createCandidate, {
       searchId,
@@ -66,7 +66,7 @@ describe("updateFromClay", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const candidateId = await t.mutation(internal.candidates.createCandidate, {
       searchId,
@@ -95,7 +95,7 @@ describe("getCandidatesForSearch", () => {
     const t = convexTest(schema, modules)
     const searchId = await t.mutation(internal.searches.createSearch, {
       query: "test",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const candidates = await t.query(api.candidates.getCandidatesForSearch, {
       searchId,
@@ -107,11 +107,11 @@ describe("getCandidatesForSearch", () => {
     const t = convexTest(schema, modules)
     const search1 = await t.mutation(internal.searches.createSearch, {
       query: "search 1",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     const search2 = await t.mutation(internal.searches.createSearch, {
       query: "search 2",
-      apolloParams: { titles: [], locations: [], keywords: "", skills: [] },
+      pdlParams: {},
     })
     await t.mutation(internal.candidates.createCandidate, {
       searchId: search1,
