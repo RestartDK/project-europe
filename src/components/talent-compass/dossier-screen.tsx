@@ -55,6 +55,50 @@ function extractGithubUsername(href?: string) {
   }
 }
 
+function enrichmentCopy(
+  status: NonNullable<Dossier>["candidate"]["enrichmentStatus"]
+) {
+  switch (status) {
+    case "ready":
+      return {
+        badge: "ready now",
+        detail:
+          "This profile already has enough local data to review immediately.",
+      }
+    case "queued":
+      return {
+        badge: "getting from clay",
+        detail:
+          "Clay is still filling in more profile and contact details for this person.",
+      }
+    case "complete":
+      return {
+        badge: "updated",
+        detail: "Clay enrichment has landed on this profile.",
+      }
+    case "failed":
+      return {
+        badge: "retry needed",
+        detail: "Clay enrichment did not complete for this profile yet.",
+      }
+  }
+}
+
+function enrichmentBadgeCn(
+  status: NonNullable<Dossier>["candidate"]["enrichmentStatus"]
+) {
+  switch (status) {
+    case "ready":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+    case "queued":
+      return "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+    case "complete":
+      return "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300"
+    case "failed":
+      return "border-destructive/30 bg-destructive/10 text-destructive"
+  }
+}
+
 export function DossierScreen({ dossier }: Props) {
   if (dossier === undefined) {
     return (
@@ -99,6 +143,7 @@ export function DossierScreen({ dossier }: Props) {
 
   const rankedEvidence = [...dossier.evidence]
   const githubUsername = extractGithubUsername(c.socialGithub)
+  const enrichment = enrichmentCopy(c.enrichmentStatus)
 
   return (
     <div className="mx-auto min-h-0 w-full max-w-5xl flex-1 px-6 py-8">
@@ -142,6 +187,12 @@ export function DossierScreen({ dossier }: Props) {
                     <p className="text-xs leading-snug font-medium text-foreground">
                       {c.headline.toLowerCase()}
                     </p>
+                    <Badge
+                      variant="secondary"
+                      className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide uppercase ${enrichmentBadgeCn(c.enrichmentStatus)}`}
+                    >
+                      {enrichment.badge}
+                    </Badge>
                   </div>
                   <div className="shrink-0 text-right">
                     <div className="font-heading text-2xl font-bold tracking-tight text-foreground tabular-nums sm:text-3xl">
@@ -159,6 +210,9 @@ export function DossierScreen({ dossier }: Props) {
               <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
                 about
               </CardTitle>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                {enrichment.detail.toLowerCase()}
+              </p>
               <p className="text-xs leading-relaxed text-foreground">
                 {c.summary.toLowerCase()}
               </p>
